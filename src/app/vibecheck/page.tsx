@@ -127,7 +127,7 @@ export default function VibeCheckPage() {
             
             <p className="hero-desc text-lg md:text-xl text-white/55 max-w-2xl mx-auto leading-relaxed">
               Paste anywhere. Get the real Vibe.{" "}
-              <span className="text-indigo-400 font-semibold">Huwag maging sus!</span> 🇵🇭
+              <span className="text-indigo-400 font-semibold">Huwag maging sus!</span>
             </p>
             
             <div className="flex flex-wrap justify-center gap-6 pt-4 text-sm text-white/50">

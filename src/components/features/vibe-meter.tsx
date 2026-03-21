@@ -2,6 +2,7 @@
 
 import { cn, getVibeLabel } from "@/lib/utils";
 import { useEffect, useState } from "react";
+import { ShieldCheck, ThumbsUp, HelpCircle, AlertTriangle, ShieldAlert } from "lucide-react";
 
 interface VibeMeterProps {
   score: number;
@@ -18,6 +19,7 @@ export function VibeMeter({
 }: VibeMeterProps) {
   const [displayScore, setDisplayScore] = useState(animated ? 0 : score);
   const vibeInfo = getVibeLabel(score);
+  const ScoreIcon = score <= 20 ? ShieldCheck : score <= 40 ? ThumbsUp : score <= 60 ? HelpCircle : score <= 80 ? AlertTriangle : ShieldAlert;
 
   useEffect(() => {
     if (!animated) {
@@ -59,8 +61,8 @@ export function VibeMeter({
     <div className="w-full space-y-3">
       {/* Score Display */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-3xl">{vibeInfo.emoji}</span>
+        <div className="flex items-center gap-3">
+          <ScoreIcon className={cn("h-8 w-8", vibeInfo.color)} />
           <div>
             {showLabel && (
               <>
@@ -106,10 +108,10 @@ export function VibeMeter({
       </div>
 
       {/* Scale Labels */}
-      <div className="flex justify-between text-xs text-muted-foreground">
-        <span>LEGIT ✅</span>
-        <span>NEUTRAL 🤔</span>
-        <span>SUS 🚨</span>
+      <div className="flex justify-between text-xs text-muted-foreground font-semibold">
+        <span>LEGIT</span>
+        <span>NEUTRAL</span>
+        <span>SUSPICIOUS</span>
       </div>
     </div>
   );

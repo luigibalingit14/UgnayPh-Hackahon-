@@ -8,10 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { VibeMeter } from "@/components/features/vibe-meter";
-import { formatDate, truncateText, getVibeLabel } from "@/lib/utils";
+import { formatDate, truncateText, getVibeLabel, cn } from "@/lib/utils";
 import {
   Flame, FileText, Trophy, Loader2, Shield, LogIn, User, Edit2, Check, X,
-  Car, ShieldCheck, Briefcase, Heart, Leaf, MapPin, Building2, TrendingUp, Calendar, AlertTriangle
+  Car, ShieldCheck, Briefcase, Heart, Leaf, MapPin, Building2, TrendingUp, Calendar, AlertTriangle, ThumbsUp, HelpCircle, ShieldAlert
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -300,7 +300,7 @@ export default function DashboardPage() {
 
               {profile && profile.streak_count > 0 && (
                 <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-5 flex items-center gap-4">
-                  <div className="text-4xl">🔥</div>
+                  <div><Flame className="h-10 w-10 text-orange-500" /></div>
                   <div>
                     <h3 className="font-display font-bold text-white">{profile.streak_count} days na walang na-scam!</h3>
                     <p className="text-sm text-white/60">Keep checking suspicious content para mapanatili ang streak mo!</p>
@@ -318,11 +318,12 @@ export default function DashboardPage() {
                 <div className="space-y-3">
                   {reports.map((report) => {
                     const vibeInfo = getVibeLabel(report.score);
+                    const ScoreIcon = report.score <= 20 ? ShieldCheck : report.score <= 40 ? ThumbsUp : report.score <= 60 ? HelpCircle : report.score <= 80 ? AlertTriangle : ShieldAlert;
                     return (
                       <div key={report.id} className="bg-white/03 border border-white/05 hover:border-white/10 hover:bg-white/05 transition-colors rounded-xl p-4 flex flex-col md:flex-row md:items-center gap-4">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2 flex-wrap">
-                            <span className="text-xl">{vibeInfo.emoji}</span>
+                          <div className="flex items-center gap-3 mb-2 flex-wrap">
+                            <ScoreIcon className={cn("h-6 w-6 flex-shrink-0", vibeInfo.color)} />
                             <Badge className="bg-white/10 hover:bg-white/20 text-white border-0">Score: {report.score}</Badge>
                             <Badge variant="outline" className="border-white/10 text-white/70">{report.label_tagalog}</Badge>
                           </div>

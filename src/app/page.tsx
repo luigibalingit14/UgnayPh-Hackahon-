@@ -7,7 +7,7 @@ import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   Car, Shield, ShieldCheck, Briefcase, Heart, Leaf,
-  ArrowRight, Zap, Globe, Users, Database,
+  ArrowRight, Zap, Globe, Users, Database, MapPin
 } from "lucide-react";
 import { SyncButton } from "@/components/features/sync-button";
 
@@ -271,7 +271,9 @@ export default function HomePage() {
       <section className="bottom-cta-section py-16">
         <div className="container mx-auto px-4">
           <div className="bottom-cta-card max-w-3xl mx-auto glass-card-strong p-10 text-center space-y-6">
-            <span className="text-4xl">🇵🇭</span>
+            <span className="inline-flex justify-center mb-2">
+              <MapPin className="h-10 w-10 text-ph-yellow" />
+            </span>
             <h2 className="text-2xl md:text-3xl font-display font-bold text-white">
               Built for Every Filipino
             </h2>
