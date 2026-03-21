@@ -109,7 +109,11 @@ export default function GovernancePage() {
   };
 
   const getDraftFromAI = async () => {
-    if (!form.title) return;
+    if (!form.title.trim()) {
+      setSuccessMsg("⚠️ Paki-type muna ang Title o Issue mo bago pindutin ang AI Draft para alam nito ang isusulat.");
+      setTimeout(() => setSuccessMsg(""), 5000);
+      return;
+    }
     setAiLoading(true);
     try {
       const res = await fetch("/api/governance", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ai_draft: true, title: form.title, category: form.category }) });
@@ -163,7 +167,7 @@ export default function GovernancePage() {
                 <input className="glass-input" placeholder="Concerned Agency (optional)" value={form.agency} onChange={e => setForm(f => ({ ...f, agency: e.target.value }))} />
 
                 <div className="flex items-center gap-2">
-                  <button type="button" onClick={getDraftFromAI} disabled={aiLoading || !form.title.trim()} className="flex items-center gap-2 text-xs text-rose-300 hover:text-rose-200 bg-rose-500/05 hover:bg-rose-500/10 border border-rose-500/15 px-3 py-2 rounded-lg transition-all">
+                  <button type="button" onClick={getDraftFromAI} disabled={aiLoading} className="flex items-center gap-2 text-xs text-rose-300 hover:text-rose-200 bg-rose-500/05 hover:bg-rose-500/10 border border-rose-500/15 px-3 py-2 rounded-lg transition-all">
                     {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Bot className="h-3.5 w-3.5" />} AI Draft
                   </button>
                   <span className="text-xs text-white/30">Let AI draft your complaint</span>

@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-async function callNvidia(prompt: string): Promise<string> {
-  const apiKey = process.env.NVIDIA_API_KEY;
-  if (!apiKey) throw new Error("NVIDIA_API_KEY not set (check .env.local)");
-  const res = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+async function callGroq(prompt: string): Promise<string> {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) throw new Error("GROQ_API_KEY not set (check .env.local)");
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
-      model: "meta/llama-3.1-8b-instruct",
+      model: "llama-3.1-8b-instant",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
     }),
@@ -74,7 +74,7 @@ A traffic ${body.incident_type || "incident"} has been reported in ${body.city |
 Provide 3-4 practical, specific alternate route suggestions and general commuter tips for Filipinos affected by this situation.
 Write in a friendly, helpful tone mixing Tagalog and English. Keep it concise under 150 words.
 Format as numbered list.`;
-      const suggestion = await callNvidia(prompt);
+      const suggestion = await callGroq(prompt);
       return NextResponse.json({ success: true, ai_suggestion: suggestion });
     }
 
