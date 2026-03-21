@@ -182,7 +182,7 @@ export default function DashboardPage() {
                   <span className="text-white/30 text-xs font-mono">ID: {user?.id.substring(0,8).toUpperCase()}</span>
                 </div>
                 <h1 className="text-3xl md:text-4xl font-display font-bold text-white tracking-tight mb-2">
-                  {profile?.username || "Juan Dela Cruz"}
+                  {profile?.username || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || "Juan Dela Cruz"}
                 </h1>
                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm">
                   {isEditingCity ? (
