@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { VibeAnalysis, RedFlag, ContentCategory } from "@/types";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Base prompt for text analysis
 const TEXT_ANALYSIS_PROMPT = `You are VibeCheck PH, an AI assistant specialized in detecting disinformation, fake news, and scams targeting Filipinos. Analyze the following content and provide a comprehensive assessment.
@@ -101,22 +100,34 @@ async function tryGroq(prompt: string, apiKey: string): Promise<{ success: boole
   } catch (error) { return { success: false, error: String(error) }; }
 }
 
-// GEMINI API Integration (For Advanced Vision Analysis)
-async function tryGemini(prompt: string, apiKey: string, imageData: string, mimeType: string): Promise<{ success: boolean; text?: string; error?: string }> {
+// GROQ VISION API Integration (Fastest Image Analysis)
+async function tryGroqVision(prompt: string, apiKey: string, imageData: string, mimeType: string): Promise<{ success: boolean; text?: string; error?: string }> {
   try {
-    console.log("Trying Gemini API for Vision...");
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      generationConfig: { responseMimeType: "application/json" }
+    console.log("Trying Groq Vision API...");
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: "llama-3.2-90b-vision-preview",
+        messages: [{
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            { type: "image_url", "image_url": { "url": `data:${mimeType};base64,${imageData}` } }
+          ]
+        }],
+        temperature: 0.5,
+        max_tokens: 1024,
+      }),
     });
-
-    const result = await model.generateContent([
-      prompt,
-      { inlineData: { data: imageData, mimeType: mimeType } }
-    ]);
-
-    return { success: true, text: result.response.text() };
+    
+    if (!response.ok) {
+      const errData = await response.json();
+      return { success: false, error: errData.error?.message || "Groq Vision failed" };
+    }
+    
+    const data = await response.json();
+    return { success: true, text: data.choices?.[0]?.message?.content };
   } catch (error) { 
     return { success: false, error: String(error) }; 
   }
@@ -183,22 +194,24 @@ export async function POST(request: NextRequest) {
     }
 
     const groqKey = process.env.GROQ_API_KEY;
-    const geminiKey = process.env.GEMINI_API_KEY;
+
+    if (!groqKey) {
+      return NextResponse.json({ success: false, error: "GROQ_API_KEY is missing from .env.local" }, { status: 500 });
+    }
 
     let responseText: string | undefined;
     let provider = "";
 
     if (isImageAnalysis) {
-      // IMAGE ANALYSIS via GEMINI
-      if (!geminiKey) {
-        return NextResponse.json({ success: false, error: "GEMINI_API_KEY is missing from .env.local" }, { status: 500 });
-      }
+      // IMAGE ANALYSIS via GROQ Llama 3.2 Vision
       const imagePrompt = IMAGE_ANALYSIS_PROMPT.replace("{FORMAT_INSTRUCTIONS}", FORMAT_INSTRUCTIONS);
-      const geminiResult = await tryGemini(imagePrompt, geminiKey, imageData, imageMimeType);
+      const visionResult = await tryGroqVision(imagePrompt, groqKey, imageData, imageMimeType);
       
-      if (geminiResult.success && geminiResult.text) {
-        responseText = geminiResult.text;
-        provider = "gemini-vision";
+      if (visionResult.success && visionResult.text) {
+        responseText = visionResult.text;
+        provider = "groq-vision";
+      } else {
+         return NextResponse.json({ success: false, error: visionResult.error }, { status: 502 });
       }
     } else {
       // TEXT ANALYSIS via GROQ
