@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { VibeAnalysis, RedFlag, ContentCategory } from "@/types";
 
-// Base prompt for text analysis
+// Increase max body size to 10MB to handle base64-encoded images for Vercel
+export const maxDuration = 30;
+export const dynamic = "force-dynamic";
+
+
 const TEXT_ANALYSIS_PROMPT = `You are VibeCheck PH, an AI assistant specialized in detecting disinformation, fake news, and scams targeting Filipinos. Analyze the following content and provide a comprehensive assessment.
 
 IMPORTANT: Respond ONLY with valid JSON. No markdown, no code blocks, no additional text.

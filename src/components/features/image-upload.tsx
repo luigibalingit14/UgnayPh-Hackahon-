@@ -32,8 +32,40 @@ export function ImageUpload({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
+  const compressImage = useCallback((file: File): Promise<{ base64: string; mimeType: string }> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const MAX_DIMENSION = 1280; // Max width/height in pixels
+        let { width, height } = img;
+
+        // Scale down if needed
+        if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+          if (width > height) { height = Math.round((height * MAX_DIMENSION) / width); width = MAX_DIMENSION; }
+          else { width = Math.round((width * MAX_DIMENSION) / height); height = MAX_DIMENSION; }
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { reject(new Error("Canvas not supported")); return; }
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Compress to JPEG at 75% quality
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
+        const base64 = dataUrl.split(",")[1];
+        resolve({ base64, mimeType: "image/jpeg" });
+      };
+      img.onerror = () => reject(new Error("Failed to load image"));
+      img.src = url;
+    });
+  }, []);
+
   const processFile = useCallback(
-    (file: File) => {
+    async (file: File) => {
       setError(null);
 
       // Validate file type
@@ -48,23 +80,18 @@ export function ImageUpload({
         return;
       }
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        if (result) {
-          setPreview(result);
-          // Extract base64 data (remove data:image/...;base64, prefix)
-          const base64Data = result.split(",")[1];
-          onImageSelect(base64Data, file.type);
-        }
-      };
-      reader.onerror = () => {
-        setError("Failed to read image. Please try again.");
-      };
-      reader.readAsDataURL(file);
+      try {
+        const { base64, mimeType } = await compressImage(file);
+        // Show the compressed image as preview too
+        setPreview(`data:${mimeType};base64,${base64}`);
+        onImageSelect(base64, mimeType);
+      } catch {
+        setError("Failed to process image. Please try another file.");
+      }
     },
-    [onImageSelect]
+    [onImageSelect, compressImage]
   );
+
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
