@@ -17,7 +17,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 export default function DashboardPage() {
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading, signOut } = useAuth();
   const supabase = createClient();
   
   const [activeTab, setActiveTab] = useState<"vibecheck"|"mobility"|"governance"|"jobs"|"health"|"agri">("vibecheck");
@@ -219,7 +219,7 @@ export default function DashboardPage() {
                 <Button asChild className="btn-primary flex-1 md:flex-none py-2 px-5 shadow-lg shadow-indigo-500/20 border-0" style={{ background: "linear-gradient(135deg, #6366f1, #4f46e5)" }}>
                   <Link href="/">Check Feed</Link>
                 </Button>
-<Button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/'; }} variant="outline" className="flex-1 md:flex-none bg-white/05 border-white/10 text-white/60 hover:text-white hover:bg-white/10">
+                <Button onClick={signOut} variant="outline" className="flex-1 md:flex-none bg-white/05 border-white/10 text-white/60 hover:text-white hover:bg-white/10">
                   <LogIn className="h-4 w-4 mr-2 rotate-180" /> Logout
                 </Button>
               </div>
