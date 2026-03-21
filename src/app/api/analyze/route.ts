@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { VibeAnalysis, RedFlag, ContentCategory } from "@/types";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Base prompt for text analysis
 const TEXT_ANALYSIS_PROMPT = `You are VibeCheck PH, an AI assistant specialized in detecting disinformation, fake news, and scams targeting Filipinos. Analyze the following content and provide a comprehensive assessment.
@@ -101,30 +100,31 @@ async function tryGroq(prompt: string, apiKey: string): Promise<{ success: boole
   } catch (error) { return { success: false, error: String(error) }; }
 }
 
-// GEMINI API Integration (For Vision Analysis)
-async function tryGemini(prompt: string, apiKey: string, imageData: string, mimeType: string): Promise<{ success: boolean; text?: string; error?: string }> {
+// NVIDIA API Integration (For Fallback Vision Analysis)
+async function tryNvidia(prompt: string, apiKey: string, imageData: string, mimeType: string): Promise<{ success: boolean; text?: string; error?: string }> {
   try {
-    console.log("Trying Gemini API for Vision...");
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      generationConfig: { responseMimeType: "application/json" }
+    console.log("Trying NVIDIA API for Vision...");
+    const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: "nvidia/llama-3.2-nv-vision-instruct",
+        messages: [{
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            { type: "image_url", image_url: { url: `data:${mimeType};base64,${imageData}` } }
+          ]
+        }],
+        temperature: 0.7,
+        max_tokens: 2048,
+        top_p: 1.0,
+      }),
     });
-
-    const result = await model.generateContent([
-      prompt,
-      {
-        inlineData: {
-          data: imageData,
-          mimeType: mimeType,
-        },
-      },
-    ]);
-
-    return { success: true, text: result.response.text() };
-  } catch (error) { 
-    return { success: false, error: String(error) }; 
-  }
+    if (!response.ok) return { success: false, error: "NVIDIA Vision error" };
+    const data = await response.json();
+    return { success: true, text: data.choices?.[0]?.message?.content };
+  } catch (error) { return { success: false, error: String(error) }; }
 }
 
 // Parse AI response to VibeAnalysis
@@ -188,22 +188,22 @@ export async function POST(request: NextRequest) {
     }
 
     const groqKey = process.env.GROQ_API_KEY;
-    const geminiKey = process.env.GEMINI_API_KEY;
+    const nvidiaKey = process.env.NVIDIA_API_KEY;
 
     let responseText: string | undefined;
     let provider = "";
 
     if (isImageAnalysis) {
-      // IMAGE ANALYSIS via GEMINI
-      if (!geminiKey) {
-        return NextResponse.json({ success: false, error: "Wala pang GEMINI_API_KEY sa .env.local para sa Image Scanner!" }, { status: 500 });
+      // IMAGE ANALYSIS via NVIDIA
+      if (!nvidiaKey) {
+        return NextResponse.json({ success: false, error: "NVIDIA_API_KEY is missing from .env.local" }, { status: 500 });
       }
       const imagePrompt = IMAGE_ANALYSIS_PROMPT.replace("{FORMAT_INSTRUCTIONS}", FORMAT_INSTRUCTIONS);
-      const geminiResult = await tryGemini(imagePrompt, geminiKey, imageData, imageMimeType);
+      const nvidiaResult = await tryNvidia(imagePrompt, nvidiaKey, imageData, imageMimeType);
       
-      if (geminiResult.success && geminiResult.text) {
-        responseText = geminiResult.text;
-        provider = "gemini-vision";
+      if (nvidiaResult.success && nvidiaResult.text) {
+        responseText = nvidiaResult.text;
+        provider = "nvidia-vision";
       }
     } else {
       // TEXT ANALYSIS via GROQ
