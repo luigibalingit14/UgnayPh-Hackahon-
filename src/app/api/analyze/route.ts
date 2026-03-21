@@ -79,65 +79,52 @@ Red flags to look for (Philippine context):
 
 Remember: Your analysis helps protect Filipinos from disinformation. Be accurate and helpful!`;
 
-// GROQ API Integration
-async function tryGroq(prompt: string, apiKey: string, imageData?: string, mimeType?: string): Promise<{ success: boolean; text?: string; error?: string }> {
+// GROQ API Integration (For Fast Text Analysis)
+async function tryGroq(prompt: string, apiKey: string): Promise<{ success: boolean; text?: string; error?: string }> {
   try {
-    console.log("Trying GROQ API...");
-
-    // For image analysis, include image data in the message
-    let messages;
-    if (imageData && mimeType) {
-      console.log("GROQ: Adding image to request");
-      messages = [{
-        role: "user",
-        content: [
-          { type: "text", text: prompt },
-          { type: "image_url", image_url: { url: `data:${mimeType};base64,${imageData}` } }
-        ]
-      }];
-    } else {
-      messages = [{ role: "user", content: prompt }];
-    }
-
-    // Use vision model for images, text model otherwise
-    const model = imageData ? "llama-3.2-90b-vision-preview" : "llama-3.1-8b-instant";
-
+    console.log("Trying GROQ API for text...");
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-      },
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
       body: JSON.stringify({
-        model: model,
-        messages: messages,
+        model: "llama-3.1-8b-instant",
+        messages: [{ role: "user", content: prompt }],
         temperature: 0.7,
         max_tokens: 2048,
         response_format: { type: "json_object" }
       }),
     });
-
-    console.log(`GROQ response status: ${response.status}`);
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("GROQ error:", JSON.stringify(errorData, null, 2));
-      return { success: false, error: errorData.error?.message || "GROQ API error" };
-    }
-
+    if (!response.ok) return { success: false, error: "GROQ API error" };
     const data = await response.json();
-    const text = data.choices?.[0]?.message?.content;
+    return { success: true, text: data.choices?.[0]?.message?.content };
+  } catch (error) { return { success: false, error: String(error) }; }
+}
 
-    if (text) {
-      console.log("✓ Success with GROQ API");
-      return { success: true, text };
-    }
-
-    return { success: false, error: "Empty response from GROQ" };
-  } catch (error) {
-    console.error("GROQ exception:", error);
-    return { success: false, error: String(error) };
-  }
+// NVIDIA API Integration (For Fallback Vision Analysis)
+async function tryNvidia(prompt: string, apiKey: string, imageData: string, mimeType: string): Promise<{ success: boolean; text?: string; error?: string }> {
+  try {
+    console.log("Trying NVIDIA API for Vision...");
+    const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: "nvidia/llama-3.2-nv-vision-instruct",
+        messages: [{
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            { type: "image_url", image_url: { url: `data:${mimeType};base64,${imageData}` } }
+          ]
+        }],
+        temperature: 0.7,
+        max_tokens: 2048,
+        top_p: 1.0,
+      }),
+    });
+    if (!response.ok) return { success: false, error: "NVIDIA Vision error" };
+    const data = await response.json();
+    return { success: true, text: data.choices?.[0]?.message?.content };
+  } catch (error) { return { success: false, error: String(error) }; }
 }
 
 // Parse AI response to VibeAnalysis
@@ -201,29 +188,28 @@ export async function POST(request: NextRequest) {
     }
 
     const groqKey = process.env.GROQ_API_KEY;
-
-    if (!groqKey) {
-      return NextResponse.json(
-        { success: false, error: "No API key configured. Add GROQ_API_KEY to .env.local" },
-        { status: 500 }
-      );
-    }
+    const nvidiaKey = process.env.NVIDIA_API_KEY;
 
     let responseText: string | undefined;
     let provider = "";
 
     if (isImageAnalysis) {
-      // Image analysis with GROQ
+      // IMAGE ANALYSIS via NVIDIA (Groq Vision is decommissioned)
+      if (!nvidiaKey) {
+        return NextResponse.json({ success: false, error: "Add NVIDIA_API_KEY to .env.local for Image Analysis" }, { status: 500 });
+      }
       const imagePrompt = IMAGE_ANALYSIS_PROMPT.replace("{FORMAT_INSTRUCTIONS}", FORMAT_INSTRUCTIONS);
-
-      console.log("Attempting image analysis with GROQ...");
-      const groqResult = await tryGroq(imagePrompt, groqKey, imageData, imageMimeType);
-      if (groqResult.success && groqResult.text) {
-        responseText = groqResult.text;
-        provider = "groq";
+      const nvidiaResult = await tryNvidia(imagePrompt, nvidiaKey, imageData, imageMimeType);
+      
+      if (nvidiaResult.success && nvidiaResult.text) {
+        responseText = nvidiaResult.text;
+        provider = "nvidia-vision";
       }
     } else {
-      // Text analysis with GROQ
+      // TEXT ANALYSIS via GROQ
+      if (!groqKey) {
+        return NextResponse.json({ success: false, error: "Add GROQ_API_KEY to .env.local for Text Analysis" }, { status: 500 });
+      }
       const textPrompt = TEXT_ANALYSIS_PROMPT
         .replace("{CONTENT}", content)
         .replace("{FORMAT_INSTRUCTIONS}", FORMAT_INSTRUCTIONS);
@@ -231,7 +217,7 @@ export async function POST(request: NextRequest) {
       const groqResult = await tryGroq(textPrompt, groqKey);
       if (groqResult.success && groqResult.text) {
         responseText = groqResult.text;
-        provider = "groq";
+        provider = "groq-text";
       }
     }
 

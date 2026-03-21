@@ -60,67 +60,58 @@ export default function DashboardPage() {
       if (!user) return;
       setLoading(true);
 
+      const userCity = profile?.city || "Manila";
+
       try {
-        // Fetch VibeCheck (Nationwide vibe checks)
-        const vcRes = await fetch(`/api/reports?limit=10&offset=0`);
-        const vcData = await vcRes.json();
-        if (vcData.success) setReports(vcData.reports);
+        // Fetch all data concurrently for lightning-fast speeds
+        const results = await Promise.allSettled([
+          fetch(`/api/reports?limit=10&offset=0`).then(res => res.json()),
+          fetch(`/api/mobility?city=${userCity}`).then(res => res.json()),
+          fetch(`/api/governance`).then(res => res.json()),
+          fetch(`/api/jobs`).then(res => res.json()),
+          supabase.from("health_appointments").select("*, health_centers(name, address)").eq("user_id", user.id).order("created_at", { ascending: false }),
+          fetch(`/api/agri`).then(res => res.json())
+        ]);
 
-        const userCity = profile?.city || "Manila";
-
-        // Fetch Mobility for user's city
-        // Note: For demo without DB data, we hit the API which has fallback demo data
-        const mobRes = await fetch(`/api/mobility?city=${userCity}`);
-        const mobData = await mobRes.json();
-        if (mobData.success) {
-            // Check if API returned demo data, if yes, just use it, otherwise use DB data 
-            setMobility(mobData.reports);
+        // Process VibeCheck
+        if (results[0].status === "fulfilled" && results[0].value.success) {
+          setReports(results[0].value.reports || []);
         }
 
-        // Fetch Governance for user's city
-        const govRes = await fetch(`/api/governance`);
-        const govData = await govRes.json();
-        if (govData.success) {
-            setGovernance(govData.complaints);
-        }
+        // Process Mobility
+        let localMobility: any[] = [];
+        try { localMobility = JSON.parse(localStorage.getItem("demo_mobility_reports") || "[]"); } catch(e) {}
+        if (results[1].status === "fulfilled" && results[1].value.success) {
+          setMobility([...localMobility, ...(results[1].value.reports || [])]);
+        } else setMobility(localMobility);
 
-        // Fetch Jobs for user's region (or just all for demo)
-        const jobRes = await fetch(`/api/jobs`);
-        const jobData = await jobRes.json();
-        
+        // Process Governance
+        let localGov: any[] = [];
+        try { localGov = JSON.parse(localStorage.getItem("demo_governance_complaints") || "[]"); } catch(e) {}
+        if (results[2].status === "fulfilled" && results[2].value.success) {
+          setGovernance([...localGov, ...(results[2].value.complaints || [])]);
+        } else setGovernance(localGov);
+
+        // Process Jobs
         let localJobs: any[] = [];
         try { localJobs = JSON.parse(localStorage.getItem("demo_jobs") || "[]"); } catch(e) {}
+        if (results[3].status === "fulfilled" && results[3].value.success) {
+          setJobs([...localJobs, ...(results[3].value.jobs || [])]);
+        } else setJobs(localJobs);
 
-        if (jobData.success) {
-            setJobs([...localJobs, ...(jobData.jobs || [])]);
-        } else {
-            setJobs(localJobs);
-        }
-
-        // Fetch Health Appointments (keep this user-specific as it's private data)
-        const { data: healthData } = await supabase.from("health_appointments").select("*, health_centers(name, address)").eq("user_id", user.id).order("created_at", { ascending: false });
-        
+        // Process Health
         let localHealth: any[] = [];
-        try {
-          localHealth = JSON.parse(localStorage.getItem("demo_health_appointments") || "[]");
-        } catch(e) {}
+        try { localHealth = JSON.parse(localStorage.getItem("demo_health_appointments") || "[]"); } catch(e) {}
+        if (results[4].status === "fulfilled" && results[4].value.data) {
+          setHealthMsgs([...localHealth, ...results[4].value.data]);
+        } else setHealthMsgs(localHealth);
 
-        if (healthData) {
-           setHealthMsgs([...localHealth, ...healthData]);
-        } else {
-           setHealthMsgs(localHealth);
-        }
-
-        // Fetch Agri 
-        const agriRes = await fetch(`/api/agri`);
-        const agriData = await agriRes.json();
+        // Process Agri
         let localAgri: any[] = [];
         try { localAgri = JSON.parse(localStorage.getItem("demo_agri_prices") || "[]"); } catch(e) {}
-        if (agriData.success) {
-            setAgri([...localAgri, ...(agriData.prices || [])]);
-        } else {
-            setAgri(localAgri);
-        }
+        if (results[5].status === "fulfilled" && results[5].value.success) {
+          setAgri([...localAgri, ...(results[5].value.prices || [])]);
+        } else setAgri(localAgri);
 
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
