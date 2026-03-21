@@ -116,31 +116,63 @@ export function ImageUpload({
   if (preview) {
     return (
       <div className="relative">
-        <Card className="overflow-hidden">
-          <div className="relative aspect-video bg-muted flex items-center justify-center">
+        <Card className={`overflow-hidden transition-all duration-300 ${disabled ? "ring-2 ring-indigo-500/70 shadow-lg shadow-indigo-500/20" : ""}`}>
+          <div className="relative aspect-video bg-muted flex items-center justify-center overflow-hidden">
             <img
               src={preview}
               alt="Preview"
-              className="max-h-[300px] w-auto object-contain"
+              className={`max-h-[300px] w-auto object-contain transition-all duration-500 ${disabled ? "brightness-75" : ""}`}
             />
-            <Button
-              variant="destructive"
-              size="icon"
-              className="absolute top-2 right-2"
-              onClick={handleClear}
-              disabled={disabled}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+
+            {/* LASER SCAN ANIMATION (activates during analysis) */}
+            {disabled && (
+              <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                {/* Scan line */}
+                <div
+                  className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-indigo-400 to-transparent opacity-90"
+                  style={{ animation: "scanLine 2s linear infinite" }}
+                />
+                {/* Corner brackets */}
+                <div className="absolute top-2 left-2 w-6 h-6 border-t-2 border-l-2 border-indigo-400 rounded-tl-sm" />
+                <div className="absolute top-2 right-2 w-6 h-6 border-t-2 border-r-2 border-indigo-400 rounded-tr-sm" />
+                <div className="absolute bottom-2 left-2 w-6 h-6 border-b-2 border-l-2 border-indigo-400 rounded-bl-sm" />
+                <div className="absolute bottom-2 right-2 w-6 h-6 border-b-2 border-r-2 border-indigo-400 rounded-br-sm" />
+                {/* Scanning label */}
+                <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-2">
+                  <span className="text-xs font-mono text-indigo-300 tracking-widest px-2 py-1 bg-black/40 rounded backdrop-blur-sm animate-pulse">
+                    ◉ SCANNING...
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {!disabled && (
+              <Button
+                variant="destructive"
+                size="icon"
+                className="absolute top-2 right-2"
+                onClick={handleClear}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
           <div className="p-3 bg-muted/50 text-center text-sm text-muted-foreground">
             <FileImage className="h-4 w-4 inline mr-2" />
-            Image ready for analysis
+            {disabled ? "Analyzing image with AI..." : "Image ready for analysis"}
           </div>
         </Card>
+
+        <style jsx>{`
+          @keyframes scanLine {
+            0% { top: 0%; }
+            100% { top: 100%; }
+          }
+        `}</style>
       </div>
     );
   }
+
 
   return (
     <div className="space-y-3">
