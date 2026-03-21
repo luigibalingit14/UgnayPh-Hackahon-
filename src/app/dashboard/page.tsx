@@ -22,6 +22,7 @@ export default function DashboardPage() {
   
   const [activeTab, setActiveTab] = useState<"vibecheck"|"mobility"|"governance"|"jobs"|"health"|"agri">("vibecheck");
   const [loading, setLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Profile Edit States
   const [isEditingCity, setIsEditingCity] = useState(false);
@@ -117,6 +118,7 @@ export default function DashboardPage() {
         console.error("Failed to fetch dashboard data:", error);
       } finally {
         setLoading(false);
+        setIsInitialLoad(false);
       }
     };
 
@@ -124,10 +126,11 @@ export default function DashboardPage() {
       fetchAllData();
     } else if (!authLoading && !user) {
       setLoading(false); // Make sure dashboard stops loading if they are fully logged out/no user
+      setIsInitialLoad(false);
     }
   }, [user, authLoading, profile?.city]); // Depend on profile?.city instead of full profile to prevent re-fetching loops
 
-  if (authLoading || loading) {
+  if (authLoading || (loading && isInitialLoad)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-white/50" />
