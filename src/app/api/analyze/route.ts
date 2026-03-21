@@ -108,7 +108,7 @@ async function tryNvidia(prompt: string, apiKey: string, imageData: string, mime
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
       body: JSON.stringify({
-        model: "nvidia/llama-3.2-nv-vision-instruct",
+        model: "meta/llama-3.2-90b-vision-instruct",
         messages: [{
           role: "user",
           content: [
