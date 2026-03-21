@@ -63,63 +63,51 @@ export default function DashboardPage() {
 
       const userCity = profile?.city || "Manila";
 
-      try {
-        // Fetch all data concurrently for lightning-fast speeds
-        const results = await Promise.allSettled([
-          fetch(`/api/reports?limit=10&offset=0`).then(res => res.json()),
-          fetch(`/api/mobility?city=${userCity}`).then(res => res.json()),
-          fetch(`/api/governance`).then(res => res.json()),
-          fetch(`/api/jobs`).then(res => res.json()),
-          supabase.from("health_appointments").select("*, health_centers(name, address)").eq("user_id", user.id).order("created_at", { ascending: false }),
-          fetch(`/api/agri`).then(res => res.json())
-        ]);
+      // Fetch all data independently for true progressive rendering
+      // This immediately frees up the UI while data streams in
+      setLoading(false);
+      setIsInitialLoad(false);
 
-        // Process VibeCheck
-        if (results[0].status === "fulfilled" && results[0].value.success) {
-          setReports(results[0].value.reports || []);
-        }
+      fetch(`/api/reports?limit=10&offset=0`).then(res => res.json()).then(data => {
+        if (data.success) setReports(data.reports || []);
+      }).catch(console.error);
 
-        // Process Mobility
+      fetch(`/api/mobility?city=${userCity}`).then(res => res.json()).then(data => {
         let localMobility: any[] = [];
         try { localMobility = JSON.parse(localStorage.getItem("demo_mobility_reports") || "[]"); } catch(e) {}
-        if (results[1].status === "fulfilled" && results[1].value.success) {
-          setMobility([...localMobility, ...(results[1].value.reports || [])]);
-        } else setMobility(localMobility);
+        if (data.success) setMobility([...localMobility, ...(data.reports || [])]);
+        else setMobility(localMobility);
+      }).catch(console.error);
 
-        // Process Governance
+      fetch(`/api/governance`).then(res => res.json()).then(data => {
         let localGov: any[] = [];
         try { localGov = JSON.parse(localStorage.getItem("demo_governance_complaints") || "[]"); } catch(e) {}
-        if (results[2].status === "fulfilled" && results[2].value.success) {
-          setGovernance([...localGov, ...(results[2].value.complaints || [])]);
-        } else setGovernance(localGov);
+        if (data.success) setGovernance([...localGov, ...(data.complaints || [])]);
+        else setGovernance(localGov);
+      }).catch(console.error);
 
-        // Process Jobs
+      fetch(`/api/jobs`).then(res => res.json()).then(data => {
         let localJobs: any[] = [];
         try { localJobs = JSON.parse(localStorage.getItem("demo_jobs") || "[]"); } catch(e) {}
-        if (results[3].status === "fulfilled" && results[3].value.success) {
-          setJobs([...localJobs, ...(results[3].value.jobs || [])]);
-        } else setJobs(localJobs);
+        if (data.success) setJobs([...localJobs, ...(data.jobs || [])]);
+        else setJobs(localJobs);
+      }).catch(console.error);
 
-        // Process Health
-        let localHealth: any[] = [];
-        try { localHealth = JSON.parse(localStorage.getItem("demo_health_appointments") || "[]"); } catch(e) {}
-        if (results[4].status === "fulfilled" && results[4].value.data) {
-          setHealthMsgs([...localHealth, ...results[4].value.data]);
-        } else setHealthMsgs(localHealth);
+      supabase.from("health_appointments").select("*, health_centers(name, address)").eq("user_id", user.id).order("created_at", { ascending: false })
+        .then(({ data, error }) => {
+          if (error) console.error(error);
+          let localHealth: any[] = [];
+          try { localHealth = JSON.parse(localStorage.getItem("demo_health_appointments") || "[]"); } catch(e) {}
+          if (data) setHealthMsgs([...localHealth, ...data]);
+          else setHealthMsgs(localHealth);
+        });
 
-        // Process Agri
+      fetch(`/api/agri`).then(res => res.json()).then(data => {
         let localAgri: any[] = [];
         try { localAgri = JSON.parse(localStorage.getItem("demo_agri_prices") || "[]"); } catch(e) {}
-        if (results[5].status === "fulfilled" && results[5].value.success) {
-          setAgri([...localAgri, ...(results[5].value.prices || [])]);
-        } else setAgri(localAgri);
-
-      } catch (error) {
-        console.error("Failed to fetch dashboard data:", error);
-      } finally {
-        setLoading(false);
-        setIsInitialLoad(false);
-      }
+        if (data.success) setAgri([...localAgri, ...(data.prices || [])]);
+        else setAgri(localAgri);
+      }).catch(console.error);
     };
 
     if (user && !authLoading) { // Changed from (user && profile) to prevent infinite loading if profile fails
