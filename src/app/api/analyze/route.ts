@@ -100,7 +100,7 @@ async function tryGroq(prompt: string, apiKey: string, imageData?: string, mimeT
     }
 
     // Use vision model for images, text model otherwise
-    const model = imageData ? "llama-3.2-11b-vision-preview" : "llama-3.1-8b-instant";
+    const model = imageData ? "llama-3.2-90b-vision-preview" : "llama-3.1-8b-instant";
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -113,6 +113,7 @@ async function tryGroq(prompt: string, apiKey: string, imageData?: string, mimeT
         messages: messages,
         temperature: 0.7,
         max_tokens: 2048,
+        response_format: { type: "json_object" }
       }),
     });
 
