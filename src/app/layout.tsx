@@ -4,6 +4,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ToastContextProvider } from "@/hooks/use-toast";
+import { ChatWidget } from "@/components/features/chat-widget";
 
 export const metadata: Metadata = {
   title: "UgnayPH — Connecting Filipinos to Solutions",
@@ -50,6 +51,7 @@ export default function RootLayout({
             <Header />
             <main className="flex-1">{children}</main>
             <Footer />
+            <ChatWidget />
           </ToastContextProvider>
         </AuthProvider>
       </body>
