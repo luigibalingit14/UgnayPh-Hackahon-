@@ -17,12 +17,20 @@
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', sans-serif;
     background-color: #080c14;
+    min-height: 100vh;
+  }
+
+  /* Hardware-accelerated fixed background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
     background-image:
       radial-gradient(ellipse 80% 80% at 50% -20%, rgba(0, 56, 168, 0.15) 0%, transparent 50%),
       radial-gradient(ellipse 80% 80% at 100% 100%, rgba(206, 17, 38, 0.1) 0%, transparent 50%),
       radial-gradient(ellipse 60% 60% at 0% 100%, rgba(252, 209, 22, 0.08) 0%, transparent 50%);
-    background-attachment: fixed;
-    min-height: 100vh;
   }
 
   ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -39,8 +47,8 @@
   /* === GLASSMORPHISM CARDS === */
   .glass-card {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 1rem;
     box-shadow:
@@ -48,11 +56,17 @@
       inset 0 1px 1px rgba(255,255,255,0.1),
       inset 0 0 20px rgba(255,255,255,0.02);
   }
+  @media (min-width: 768px) {
+    .glass-card {
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+  }
 
   .glass-card-strong {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.03) 100%);
-    backdrop-filter: blur(32px);
-    -webkit-backdrop-filter: blur(32px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 1rem;
     box-shadow:
@@ -60,20 +74,33 @@
       inset 0 1px 1px rgba(255,255,255,0.15),
       inset 0 0 30px rgba(255,255,255,0.03);
   }
+  @media (min-width: 768px) {
+    .glass-card-strong {
+      backdrop-filter: blur(32px);
+      -webkit-backdrop-filter: blur(32px);
+    }
+  }
 
   .glass-nav {
-    background: rgba(8, 12, 20, 0.7);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    background: rgba(8, 12, 20, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  @media (min-width: 768px) {
+    .glass-nav {
+      background: rgba(8, 12, 20, 0.7);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+    }
   }
 
   /* === CHALLENGE MODULE CARDS === */
   .module-card {
     position: relative;
     background: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 1.25rem;
     padding: 1.75rem;
@@ -82,6 +109,13 @@
     cursor: pointer;
     text-decoration: none;
     display: block;
+    will-change: transform;
+  }
+  @media (min-width: 768px) {
+    .module-card {
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
   }
 
   .module-card::before {
