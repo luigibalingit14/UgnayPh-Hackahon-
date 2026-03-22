@@ -197,7 +197,10 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, error: "GEMINI_API_KEY is missing from environment variables" }, { status: 500 });
       }
       const imagePrompt = IMAGE_ANALYSIS_PROMPT.replace("{FORMAT_INSTRUCTIONS}", FORMAT_INSTRUCTIONS);
-      const geminiResult = await tryGemini(imagePrompt, geminiKey, imageData, imageMimeType);
+      
+      // Strip Data URI prefix if present
+      const cleanImageData = imageData.includes("base64,") ? imageData.split("base64,")[1] : imageData;
+      const geminiResult = await tryGemini(imagePrompt, geminiKey, cleanImageData, imageMimeType);
       
       if (geminiResult.success && geminiResult.text) {
         responseText = geminiResult.text;
