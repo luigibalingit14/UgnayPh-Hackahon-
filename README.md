@@ -135,7 +135,7 @@ All tables use **Row Level Security (RLS)** to ensure each user can only access 
 ## 👥 Team
 
 <div align="center">
-  <img src="https://upload.wikimedia.org/wikipedia/en/2/2f/University_of_Makati_logo.png" width="120" alt="UMAK Logo" />
+  <img src="public/UMak-Logo-Registered-Favicon.png" width="120" alt="UMAK Logo" />
   <br/>
   <h3>University of Makati</h3>
 </div>
