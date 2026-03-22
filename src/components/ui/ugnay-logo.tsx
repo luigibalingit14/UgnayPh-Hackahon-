@@ -1,123 +1,39 @@
 "use client";
 
-import React, { useRef } from "react";
-import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
-
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(useGSAP);
-}
+import React from "react";
 
 export function UgnayLogo({ className = "w-10 h-10" }: { className?: string }) {
-  const container = useRef<SVGSVGElement>(null);
-
-  useGSAP(() => {
-    // 1. Entrance animation
-    gsap.from(container.current, {
-      scale: 0.5,
-      opacity: 0,
-      duration: 1.8,
-      ease: "elastic.out(1, 0.45)"
-    });
-
-    // 2. Slow outer ring rotation
-    gsap.to(".logo-outer-ring", {
-      rotation: 360,
-      transformOrigin: "50px 50px",
-      duration: 20,
-      repeat: -1,
-      ease: "none"
-    });
-
-    // 3. Counter-rotation for inner star rays (opposite direction for depth)
-    gsap.to(".logo-rays", {
-      rotation: -360,
-      transformOrigin: "50px 50px",
-      duration: 30,
-      repeat: -1,
-      ease: "none"
-    });
-
-    // 4. Pulsing core glow
-    gsap.to(".logo-core-pulse", {
-      r: 15,
-      opacity: 0.25,
-      duration: 2,
-      repeat: -1,
-      yoyo: true,
-      ease: "sine.inOut"
-    });
-
-    // 5. Node orbit with stagger
-    gsap.to(".logo-node", {
-      opacity: 0.4,
-      scale: 0.7,
-      transformOrigin: "center center",
-      duration: 1.2,
-      stagger: { each: 0.18, repeat: -1, yoyo: true },
-      ease: "power1.inOut"
-    });
-
-    // 6. Data flow on lines
-    gsap.to(".logo-flow", {
-      strokeDashoffset: -24,
-      duration: 1.8,
-      repeat: -1,
-      ease: "none"
-    });
-
-  }, { scope: container });
-
   return (
     <svg
-      ref={container}
       viewBox="0 0 100 100"
       className={className}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
-        {/* Indigo-Purple core gradient */}
-        <radialGradient id="logo-core-grad" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#a78bfa" />
-          <stop offset="100%" stopColor="#4f46e5" />
-        </radialGradient>
-
-        {/* Gold sun gradient */}
-        <radialGradient id="logo-sun-grad" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#fef08a" />
-          <stop offset="70%" stopColor="#f59e0b" />
-          <stop offset="100%" stopColor="#d97706" />
-        </radialGradient>
-
-        {/* Outer ring gradient */}
-        <linearGradient id="logo-ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#818cf8" stopOpacity="0.8" />
-          <stop offset="50%" stopColor="#f59e0b" stopOpacity="0.5" />
-          <stop offset="100%" stopColor="#c084fc" stopOpacity="0.8" />
+        {/* Outer ring gradient (blue → indigo → gold) */}
+        <linearGradient id="ring-g" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#0038A8" />
+          <stop offset="50%" stopColor="#6366f1" />
+          <stop offset="100%" stopColor="#FCD116" />
         </linearGradient>
 
-        {/* Glow filter for sun */}
-        <filter id="sun-glow" x="-60%" y="-60%" width="220%" height="220%">
-          <feGaussianBlur stdDeviation="4" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
+        {/* Sun body gradient */}
+        <radialGradient id="sun-g" cx="50%" cy="40%" r="60%">
+          <stop offset="0%" stopColor="#FEF08A" />
+          <stop offset="60%" stopColor="#FCD116" />
+          <stop offset="100%" stopColor="#D97706" />
+        </radialGradient>
 
-        {/* Soft glow for nodes */}
-        <filter id="node-glow" x="-100%" y="-100%" width="300%" height="300%">
-          <feGaussianBlur stdDeviation="2.5" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
+        {/* Inner disc (glassmorphism base) */}
+        <radialGradient id="disc-g" cx="50%" cy="30%" r="80%">
+          <stop offset="0%" stopColor="#1e2a4a" stopOpacity="0.9" />
+          <stop offset="100%" stopColor="#080c14" stopOpacity="0.7" />
+        </radialGradient>
 
-        {/* Outer ring glow */}
-        <filter id="ring-glow" x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation="1.5" result="blur" />
+        {/* Soft glow around sun */}
+        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
             <feMergeNode in="SourceGraphic" />
@@ -125,71 +41,59 @@ export function UgnayLogo({ className = "w-10 h-10" }: { className?: string }) {
         </filter>
       </defs>
 
-      {/* ── Background disc (glassmorphism base) ── */}
-      <circle cx="50" cy="50" r="47" fill="url(#logo-core-grad)" fillOpacity="0.15" />
-      <circle cx="50" cy="50" r="47" stroke="url(#logo-ring-grad)" strokeWidth="0.8" strokeOpacity="0.5" />
+      {/* ── Background disc ── */}
+      <circle cx="50" cy="50" r="46" fill="url(#disc-g)" />
 
-      {/* ── Outer dashed orbital ring (rotating) ── */}
-      <circle
-        className="logo-outer-ring"
-        cx="50" cy="50" r="40"
-        stroke="url(#logo-ring-grad)"
-        strokeWidth="1.2"
-        strokeDasharray="3 5"
-        strokeLinecap="round"
-        filter="url(#ring-glow)"
-      />
+      {/* ── Outer border ring with gradient ── */}
+      <circle cx="50" cy="50" r="46" stroke="url(#ring-g)" strokeWidth="2" strokeOpacity="0.8" />
 
-      {/* ── Network connection lines (data flowing) ── */}
-      <g strokeWidth="1.2" strokeLinecap="round">
-        {/* Left cluster */}
-        <line className="logo-flow" x1="50" y1="50" x2="14" y2="36" stroke="#818cf8" strokeDasharray="4 4" strokeOpacity="0.7" />
-        <line className="logo-flow" x1="50" y1="50" x2="14" y2="64" stroke="#818cf8" strokeDasharray="4 4" strokeOpacity="0.7" />
-        <line className="logo-flow" x1="14" y1="36" x2="14" y2="64" stroke="#818cf8" strokeDasharray="3 6" strokeOpacity="0.4" />
-        {/* Right cluster */}
-        <line className="logo-flow" x1="50" y1="50" x2="86" y2="36" stroke="#c084fc" strokeDasharray="4 4" strokeOpacity="0.7" />
-        <line className="logo-flow" x1="50" y1="50" x2="86" y2="64" stroke="#c084fc" strokeDasharray="4 4" strokeOpacity="0.7" />
-        <line className="logo-flow" x1="86" y1="36" x2="86" y2="64" stroke="#c084fc" strokeDasharray="3 6" strokeOpacity="0.4" />
-        {/* Top & bottom */}
-        <line className="logo-flow" x1="50" y1="50" x2="50" y2="12" stroke="#f59e0b" strokeDasharray="4 4" strokeOpacity="0.6" />
-        <line className="logo-flow" x1="50" y1="50" x2="50" y2="88" stroke="#f59e0b" strokeDasharray="4 4" strokeOpacity="0.6" />
+      {/* ── 6 outer network nodes (representing 6 modules) ── */}
+      {/* Top */}
+      <circle cx="50" cy="10" r="3.5" fill="#6366f1" fillOpacity="0.9" />
+      {/* Top-right */}
+      <circle cx="81" cy="27" r="3.5" fill="#CE1126" fillOpacity="0.9" />
+      {/* Bottom-right */}
+      <circle cx="81" cy="73" r="3.5" fill="#FCD116" fillOpacity="0.9" />
+      {/* Bottom */}
+      <circle cx="50" cy="90" r="3.5" fill="#0038A8" fillOpacity="0.9" />
+      {/* Bottom-left */}
+      <circle cx="19" cy="73" r="3.5" fill="#10b981" fillOpacity="0.9" />
+      {/* Top-left */}
+      <circle cx="19" cy="27" r="3.5" fill="#818cf8" fillOpacity="0.9" />
+
+      {/* ── Subtle connector lines to center ── */}
+      <g stroke="rgba(255,255,255,0.08)" strokeWidth="1">
+        <line x1="50" y1="13" x2="50" y2="38" />
+        <line x1="78" y1="29" x2="60" y2="41" />
+        <line x1="78" y1="71" x2="60" y2="59" />
+        <line x1="50" y1="87" x2="50" y2="62" />
+        <line x1="22" y1="71" x2="40" y2="59" />
+        <line x1="22" y1="29" x2="40" y2="41" />
       </g>
 
-      {/* ── Central Sun (Philippine sun symbol) ── */}
-      <g filter="url(#sun-glow)">
-        {/* Pulsing aura ring */}
-        <circle className="logo-core-pulse" cx="50" cy="50" r="12" fill="#f59e0b" opacity="0.2" />
-
-        {/* 8-Point sun rays ── counter-rotating */}
-        <g className="logo-rays" stroke="#f59e0b" strokeWidth="3" strokeLinecap="round">
-          <line x1="50" y1="33" x2="50" y2="25" />
-          <line x1="50" y1="67" x2="50" y2="75" />
-          <line x1="33" y1="50" x2="25" y2="50" />
-          <line x1="67" y1="50" x2="75" y2="50" />
-          <line x1="38.8" y1="38.8" x2="33.2" y2="33.2" />
-          <line x1="61.2" y1="61.2" x2="66.8" y2="66.8" />
-          <line x1="61.2" y1="38.8" x2="66.8" y2="33.2" />
-          <line x1="38.8" y1="61.2" x2="33.2" y2="66.8" />
+      {/* ── Philippine Sun (central mark) ── */}
+      <g filter="url(#glow)">
+        {/* 8 sun rays — static */}
+        <g stroke="#FCD116" strokeWidth="2.8" strokeLinecap="round" opacity="0.95">
+          {/* Cardinal */}
+          <line x1="50" y1="36" x2="50" y2="27" />
+          <line x1="50" y1="64" x2="50" y2="73" />
+          <line x1="36" y1="50" x2="27" y2="50" />
+          <line x1="64" y1="50" x2="73" y2="50" />
+          {/* Ordinal */}
+          <line x1="40.1" y1="40.1" x2="33.9" y2="33.9" />
+          <line x1="59.9" y1="59.9" x2="66.1" y2="66.1" />
+          <line x1="59.9" y1="40.1" x2="66.1" y2="33.9" />
+          <line x1="40.1" y1="59.9" x2="33.9" y2="66.1" />
         </g>
 
-        {/* Sun body */}
-        <circle cx="50" cy="50" r="11" fill="url(#logo-sun-grad)" />
-        <circle cx="50" cy="50" r="7" fill="#fef08a" fillOpacity="0.9" />
-        {/* Bright center */}
-        <circle cx="50" cy="50" r="3" fill="#ffffff" fillOpacity="0.85" />
+        {/* Sun disc */}
+        <circle cx="50" cy="50" r="12" fill="url(#sun-g)" />
+        {/* Inner bright core */}
+        <circle cx="50" cy="50" r="5.5" fill="#FFF9C4" />
+        {/* Center specular highlight */}
+        <circle cx="47" cy="47" r="2" fill="white" fillOpacity="0.6" />
       </g>
-
-      {/* ── 8 Orbital Network Nodes ── */}
-      {/* Top */}
-      <circle className="logo-node" cx="50" cy="12" r="3.5" fill="#fef08a" filter="url(#node-glow)" />
-      {/* Bottom */}
-      <circle className="logo-node" cx="50" cy="88" r="3.5" fill="#fef08a" filter="url(#node-glow)" />
-      {/* Left cluster */}
-      <circle className="logo-node" cx="14" cy="36" r="3" fill="#818cf8" filter="url(#node-glow)" />
-      <circle className="logo-node" cx="14" cy="64" r="3" fill="#818cf8" filter="url(#node-glow)" />
-      {/* Right cluster */}
-      <circle className="logo-node" cx="86" cy="36" r="3" fill="#c084fc" filter="url(#node-glow)" />
-      <circle className="logo-node" cx="86" cy="64" r="3" fill="#c084fc" filter="url(#node-glow)" />
     </svg>
   );
 }
