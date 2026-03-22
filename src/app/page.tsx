@@ -10,6 +10,7 @@ import {
   ArrowRight, Zap, Globe, Users, Database, MapPin
 } from "lucide-react";
 import { SyncButton } from "@/components/features/sync-button";
+import { ParticleNetwork } from "@/components/features/particle-network";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(useGSAP, ScrollTrigger);
@@ -144,6 +145,7 @@ export default function HomePage() {
       {/* ── HERO ── */}
       <section className="relative pt-20 pb-24 overflow-hidden">
         <div className="absolute inset-0 dot-grid opacity-50" />
+        <ParticleNetwork />
         <div className="absolute inset-0 hero-mesh" />
 
         {/* Floating blobs */}
