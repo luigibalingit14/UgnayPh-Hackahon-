@@ -39,6 +39,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
        <head>
+        <link rel="icon" href="/image-removebg-preview.png?v=2" type="image/png" sizes="any" />
         <link
           href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap"
           rel="stylesheet"
