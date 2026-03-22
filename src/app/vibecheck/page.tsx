@@ -111,7 +111,7 @@ export default function VibeCheckPage() {
         {/* Floating blobs */}
         <div className="hero-blob absolute top-20 left-10 w-72 h-72 bg-indigo-500/30 rounded-full blur-3xl pointer-events-none animate-float-slow" />
         <div className="hero-blob absolute bottom-10 right-10 w-80 h-80 bg-violet-600/20 rounded-full blur-3xl pointer-events-none animate-float-medium" />
-        <div className="hero-blob absolute inset-0 ph-sunburst opacity-40 animate-spin-slow pointer-events-none mix-blend-screen" />
+        <div className="hero-blob absolute inset-[-50%] ph-sunburst opacity-40 animate-spin-slow pointer-events-none mix-blend-screen" />
 
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl mx-auto text-center space-y-6">
