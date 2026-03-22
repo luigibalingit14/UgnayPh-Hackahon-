@@ -79,8 +79,8 @@ export default function VibeCheckPage() {
         setAnalysis(data.analysis);
         toast({ title: "Analysis Complete!", description: `Vibe Score: ${data.analysis.score}/100`, variant: data.analysis.score <= 40 ? "success" : data.analysis.score <= 60 ? "warning" : "destructive" });
       } else throw new Error(data.error || "Analysis failed");
-    } catch {
-      toast({ title: "Error!", description: "Could not analyze content. Try again.", variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: "Error!", description: err.message || "Could not analyze content. Try again.", variant: "destructive" });
     } finally { setLoading(false); }
   };
 

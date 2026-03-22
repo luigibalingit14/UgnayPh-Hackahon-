@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { VibeAnalysis, RedFlag, ContentCategory } from "@/types";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Increase max body size to 10MB to handle base64-encoded images for Vercel
-export const maxDuration = 30;
+// Removed maxDuration to prevent Vercel Hobby plan 502 errors
 export const dynamic = "force-dynamic";
 
 
@@ -206,7 +205,7 @@ export async function POST(request: NextRequest) {
         responseText = geminiResult.text;
         provider = "gemini-vision";
       } else {
-        return NextResponse.json({ success: false, error: geminiResult.error }, { status: 502 });
+        return NextResponse.json({ success: false, error: geminiResult.error }, { status: 400 });
       }
     } else {
       // TEXT ANALYSIS via GROQ
