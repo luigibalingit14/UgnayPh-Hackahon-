@@ -1,9 +1,11 @@
 # InterCICSkwela Hackathon Challenge 2026
 
 ## 👥 Team Members
-- **Team Leader:** Yun-tzu Cosing (Project Manager)
-- **Member:** Luigi Balingit (Developer)
-- **Member:** John Andre Bermundo (UI/UX Developer)
+**University of Makati**
+
+- **Team Leader:** Yun-tzu Cosing (Project Manager) - 1st year BSCS
+- **Member:** Luigi Balingit (Developer) - 1st year BSIT
+- **Member:** John Andre Bermundo (UI/UX Developer) - 1st year BSCS
 
 ---
 

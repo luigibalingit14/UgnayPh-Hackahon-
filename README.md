@@ -134,7 +134,11 @@ All tables use **Row Level Security (RLS)** to ensure each user can only access 
 
 ## 👥 Team
 
-**UgnayPH Team** — InterCICSkwela Hackathon 2026
+**University of Makati**
+
+- **Team Leader:** Yun-tzu Cosing (Project Manager) - 1st year BSCS
+- **Member:** Luigi Balingit (Developer) - 1st year BSIT
+- **Member:** John Andre Bermundo (UI/UX Developer) - 1st year BSCS
 
 ---
 
