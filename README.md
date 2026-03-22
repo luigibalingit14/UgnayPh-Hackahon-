@@ -134,7 +134,11 @@ All tables use **Row Level Security (RLS)** to ensure each user can only access 
 
 ## 👥 Team
 
-**University of Makati**
+<div align="center">
+  <img src="https://upload.wikimedia.org/wikipedia/en/2/2f/University_of_Makati_logo.png" width="120" alt="UMAK Logo" />
+  <br/>
+  <h3>University of Makati</h3>
+</div>
 
 - **Team Leader:** Yun-tzu Cosing (Project Manager) - 1st year BSCS
 - **Member:** Luigi Balingit (Developer) - 1st year BSIT
