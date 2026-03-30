@@ -7,7 +7,7 @@ import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   Car, Shield, ShieldCheck, Briefcase, Heart, Leaf,
-  ArrowRight, Zap, Globe, Users, Database, MapPin
+  ArrowRight, Zap, Globe, Users, Database, MapPin, ShieldAlert
 } from "lucide-react";
 import { SyncButton } from "@/components/features/sync-button";
 import { ParticleNetwork } from "@/components/features/particle-network";
@@ -177,7 +177,7 @@ export default function HomePage() {
             </p>
 
             {/* CTAs */}
-            <div className="hero-cta flex flex-col sm:flex-row gap-3 justify-center pt-2">
+            <div className="hero-cta flex flex-wrap gap-3 justify-center pt-2">
               <Link href="/vibecheck" className="btn-primary text-base px-8 py-3.5">
                 <Shield className="h-5 w-5" />
                 Try VibeCheck PH
@@ -185,6 +185,10 @@ export default function HomePage() {
               <Link href="#modules" className="btn-secondary text-base px-8 py-3.5">
                 Explore All Modules
                 <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link href="/command-center" className="flex items-center gap-2 px-6 py-3.5 rounded-full text-base font-semibold bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition-all shadow-[0_0_15px_rgba(225,29,72,0.15)] focus:ring-2 focus:ring-rose-500/50">
+                <ShieldAlert className="h-5 w-5" />
+                LGU Command Center
               </Link>
             </div>
 
