@@ -11,7 +11,8 @@ import { VibeMeter } from "@/components/features/vibe-meter";
 import { formatDate, truncateText, getVibeLabel, cn } from "@/lib/utils";
 import {
   Flame, FileText, Trophy, Loader2, Shield, LogIn, User, Edit2, Check, X,
-  Car, ShieldCheck, Briefcase, Heart, Leaf, MapPin, Building2, TrendingUp, Calendar, AlertTriangle, ThumbsUp, HelpCircle, ShieldAlert
+  Car, ShieldCheck, Briefcase, Heart, Leaf, MapPin, Building2, TrendingUp, Calendar, AlertTriangle, ThumbsUp, HelpCircle, ShieldAlert,
+  Phone, Mail, Vote, IdCard, Save
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -27,6 +28,21 @@ export default function DashboardPage() {
   // Profile Edit States
   const [isEditingCity, setIsEditingCity] = useState(false);
   const [selectedCity, setSelectedCity] = useState("Manila");
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    full_name: "",
+    age: "",
+    sex: "M",
+    civil_status: "Single",
+    address: "",
+    barangay: "",
+    province: "",
+    region: "NCR",
+    contact: "",
+    occupation: "",
+    philhealth_id: "",
+    voter_status: "unregistered",
+  });
 
   // States for all modules
   const [reports, setReports] = useState<Report[]>([]);
@@ -43,6 +59,22 @@ export default function DashboardPage() {
     if (profile?.city) {
       setSelectedCity(profile.city);
     }
+    if (profile) {
+      setProfileForm({
+        full_name: profile.full_name || "",
+        age: profile.age?.toString() || "",
+        sex: profile.sex || "M",
+        civil_status: profile.civil_status || "Single",
+        address: profile.address || "",
+        barangay: profile.barangay || "",
+        province: profile.province || "",
+        region: profile.region || "NCR",
+        contact: profile.contact || "",
+        occupation: profile.occupation || "",
+        philhealth_id: profile.philhealth_id || "",
+        voter_status: profile.voter_status || "unregistered",
+      });
+    }
   }, [user, authLoading, profile]);
 
   const handleCityUpdate = async () => {
@@ -54,6 +86,37 @@ export default function DashboardPage() {
       }
     } catch (e) { console.error(e) }
     setIsEditingCity(false);
+  };
+
+  const handleProfileSave = async () => {
+    if (!user) return;
+    try {
+      const updateData: any = {
+        full_name: profileForm.full_name || null,
+        age: profileForm.age ? parseInt(profileForm.age) : null,
+        sex: profileForm.sex || null,
+        civil_status: profileForm.civil_status || null,
+        address: profileForm.address || null,
+        barangay: profileForm.barangay || null,
+        province: profileForm.province || null,
+        region: profileForm.region || null,
+        contact: profileForm.contact || null,
+        occupation: profileForm.occupation || null,
+        philhealth_id: profileForm.philhealth_id || null,
+        voter_status: profileForm.voter_status || null,
+      };
+      const { error } = await supabase.from('profiles').update(updateData).eq('id', user.id);
+      if (!error) {
+        window.location.reload();
+      }
+    } catch (e) { console.error(e) }
+    setIsEditingProfile(false);
+  };
+
+  const getCitizenId = () => {
+    if (profile?.citizen_id) return profile.citizen_id;
+    if (!user?.id) return 'UPH-0000-0000';
+    return 'UPH-' + user.id.substring(0,4).toUpperCase() + '-' + user.id.substring(9,13).toUpperCase();
   };
 
   useEffect(() => {
@@ -167,24 +230,28 @@ export default function DashboardPage() {
         {/* DIGITAL CITIZEN ID */}
         <div className="mb-8 relative overflow-hidden rounded-2xl p-[1px] bg-gradient-to-r from-indigo-500/50 via-purple-500/50 to-pink-500/50 shadow-2xl">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-3xl" />
-          <div className="relative p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 glass-card-strong border-0 h-full rounded-[15px]">
+          <div className="relative p-6 md:p-8 glass-card-strong border-0 h-full rounded-[15px]">
             
-            <div className="flex flex-col md:flex-row items-center md:items-start gap-6 w-full">
+            {/* Top row: Avatar + Name + Actions */}
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-6 w-full mb-6">
               {/* Avatar / Photo area */}
-              <div className="h-24 w-24 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-white/20 flex items-center justify-center shrink-0 shadow-inner relative overflow-hidden">
+              <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-indigo-500/30 to-purple-500/30 border border-white/20 flex items-center justify-center shrink-0 shadow-inner relative overflow-hidden">
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/micro-carbon.png')] opacity-20" />
-                <User className="h-10 w-10 text-white/80 relative z-10" />
+                <User className="h-9 w-9 text-white/80 relative z-10" />
               </div>
               
               <div className="text-center md:text-left flex-1">
                 <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
                   <Badge variant="outline" className="text-[10px] px-2 py-0 h-5 border-indigo-500/30 text-indigo-300 bg-indigo-500/10">VERIFIED CITIZEN</Badge>
-                  <span className="text-white/30 text-xs font-mono">ID: {user?.id.substring(0,8).toUpperCase()}</span>
+                  <span className="text-white/30 text-xs font-mono flex items-center gap-1"><IdCard className="h-3 w-3" /> {getCitizenId()}</span>
+                  {profile?.voter_status === "registered" && (
+                    <Badge variant="outline" className="text-[10px] px-2 py-0 h-5 border-emerald-500/30 text-emerald-300 bg-emerald-500/10">✓ VOTER</Badge>
+                  )}
                 </div>
-                <h1 className="text-3xl md:text-4xl font-display font-bold text-white tracking-tight mb-2">
-                  {profile?.username || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || "Juan Dela Cruz"}
+                <h1 className="text-2xl md:text-3xl font-display font-bold text-white tracking-tight mb-2">
+                  {profile?.full_name || profile?.username || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || "Set Your Name"}
                 </h1>
-                <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm">
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-sm">
                   {isEditingCity ? (
                     <div className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-lg border border-white/20">
                       <MapPin className="h-4 w-4 text-rose-400" />
@@ -215,7 +282,10 @@ export default function DashboardPage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-row md:flex-col gap-2 w-full md:w-auto mt-4 md:mt-0">
+              <div className="flex flex-row md:flex-col gap-2 w-full md:w-auto mt-2 md:mt-0 shrink-0">
+                <Button onClick={() => setIsEditingProfile(!isEditingProfile)} variant="outline" className={`flex-1 md:flex-none border-white/10 text-white/60 hover:text-white hover:bg-white/10 ${isEditingProfile ? 'bg-white/10 text-white border-indigo-500/40' : 'bg-white/05'}`}>
+                  <Edit2 className="h-4 w-4 mr-2" /> {isEditingProfile ? 'Cancel' : 'Edit Profile'}
+                </Button>
                 <Button asChild className="btn-primary flex-1 md:flex-none py-2 px-5 shadow-lg shadow-indigo-500/20 border-0" style={{ background: "linear-gradient(135deg, #6366f1, #4f46e5)" }}>
                   <Link href="/">Check Feed</Link>
                 </Button>
@@ -224,6 +294,43 @@ export default function DashboardPage() {
                 </Button>
               </div>
             </div>
+
+            {/* Citizen Details Grid */}
+            {isEditingProfile ? (
+              <div className="border-t border-white/10 pt-5 mt-2">
+                <h3 className="text-sm font-bold text-white/70 uppercase tracking-wider mb-4 flex items-center gap-2"><Edit2 className="h-4 w-4 text-indigo-400" /> Edit Citizen Profile</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <ProfileInput label="Full Name" value={profileForm.full_name} onChange={(v) => setProfileForm({...profileForm, full_name: v})} placeholder="Juan Dela Cruz" />
+                  <ProfileInput label="Age" value={profileForm.age} onChange={(v) => setProfileForm({...profileForm, age: v})} placeholder="25" type="number" />
+                  <ProfileSelect label="Sex" value={profileForm.sex} onChange={(v) => setProfileForm({...profileForm, sex: v})} options={[{v:"M",l:"Male"},{v:"F",l:"Female"}]} />
+                  <ProfileSelect label="Civil Status" value={profileForm.civil_status} onChange={(v) => setProfileForm({...profileForm, civil_status: v})} options={[{v:"Single",l:"Single"},{v:"Married",l:"Married"},{v:"Widowed",l:"Widowed"},{v:"Separated",l:"Separated"}]} />
+                  <ProfileInput label="Address" value={profileForm.address} onChange={(v) => setProfileForm({...profileForm, address: v})} placeholder="123 Rizal St." />
+                  <ProfileInput label="Barangay" value={profileForm.barangay} onChange={(v) => setProfileForm({...profileForm, barangay: v})} placeholder="Brgy. San Miguel" />
+                  <ProfileInput label="Province" value={profileForm.province} onChange={(v) => setProfileForm({...profileForm, province: v})} placeholder="Metro Manila" />
+                  <ProfileSelect label="Region" value={profileForm.region} onChange={(v) => setProfileForm({...profileForm, region: v})} options={[{v:"NCR",l:"NCR"},{v:"Region I",l:"Region I"},{v:"Region II",l:"Region II"},{v:"Region III",l:"Region III"},{v:"Region IV-A",l:"Region IV-A"},{v:"Region IV-B",l:"Region IV-B"},{v:"Region V",l:"Region V"},{v:"Region VI",l:"Region VI"},{v:"Region VII",l:"Region VII"},{v:"Region VIII",l:"Region VIII"},{v:"Region IX",l:"Region IX"},{v:"Region X",l:"Region X"},{v:"Region XI",l:"Region XI"},{v:"Region XII",l:"Region XII"},{v:"CAR",l:"CAR"},{v:"BARMM",l:"BARMM"},{v:"CARAGA",l:"CARAGA"}]} />
+                  <ProfileInput label="Contact No." value={profileForm.contact} onChange={(v) => setProfileForm({...profileForm, contact: v})} placeholder="0917-xxx-xxxx" />
+                  <ProfileInput label="Occupation" value={profileForm.occupation} onChange={(v) => setProfileForm({...profileForm, occupation: v})} placeholder="Teacher" />
+                  <ProfileInput label="PhilHealth ID" value={profileForm.philhealth_id} onChange={(v) => setProfileForm({...profileForm, philhealth_id: v})} placeholder="PH-01-XXXXXXXXX-X" />
+                  <ProfileSelect label="Voter Status" value={profileForm.voter_status} onChange={(v) => setProfileForm({...profileForm, voter_status: v})} options={[{v:"registered",l:"Registered"},{v:"unregistered",l:"Unregistered"}]} />
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <Button onClick={handleProfileSave} className="bg-indigo-600 hover:bg-indigo-700 text-white border-0 shadow-lg shadow-indigo-500/20">
+                    <Save className="h-4 w-4 mr-2" /> Save Profile
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 border-t border-white/10 pt-5 mt-2">
+                <CitizenField icon={User} label="Age / Sex" value={profile?.age && profile?.sex ? `${profile.age} yrs / ${profile.sex === 'M' ? 'Male' : 'Female'}` : '—'} />
+                <CitizenField icon={MapPin} label="Address" value={profile?.address ? `${profile.barangay || ''}, ${profile.city || ''}` : profile?.city || '—'} />
+                <CitizenField icon={Briefcase} label="Occupation" value={profile?.occupation || '—'} />
+                <CitizenField icon={Shield} label="PhilHealth" value={profile?.philhealth_id || '—'} />
+                <CitizenField icon={Phone} label="Contact" value={profile?.contact || '—'} />
+                <CitizenField icon={Mail} label="Email" value={user?.email || '—'} />
+                <CitizenField icon={Heart} label="Civil Status" value={profile?.civil_status || '—'} />
+                <CitizenField icon={Vote} label="Region" value={profile?.region || '—'} />
+              </div>
+            )}
 
             {/* Background design elements */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
@@ -503,3 +610,49 @@ function EmptyState({ icon: Icon, msg, link, btn }: { icon: any, msg: string, li
   );
 }
 
+// Citizen Detail Field (read-only display)
+function CitizenField({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+  return (
+    <div className="bg-white/03 border border-white/05 rounded-xl p-3">
+      <div className="flex items-center gap-1.5 mb-1">
+        <Icon className="h-3.5 w-3.5 text-white/30" />
+        <span className="text-[10px] text-white/40 uppercase tracking-wider font-semibold">{label}</span>
+      </div>
+      <p className="text-sm font-semibold text-white truncate" title={value}>{value}</p>
+    </div>
+  );
+}
+
+// Profile Input Field (for editing)
+function ProfileInput({ label, value, onChange, placeholder, type = "text" }: { label: string; value: string; onChange: (v: string) => void; placeholder: string; type?: string }) {
+  return (
+    <div className="space-y-1">
+      <label className="text-[10px] text-white/40 uppercase tracking-wider font-semibold">{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full bg-white/05 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all"
+      />
+    </div>
+  );
+}
+
+// Profile Select Field (for editing)
+function ProfileSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: { v: string; l: string }[] }) {
+  return (
+    <div className="space-y-1">
+      <label className="text-[10px] text-white/40 uppercase tracking-wider font-semibold">{label}</label>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full bg-white/05 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all appearance-none cursor-pointer"
+      >
+        {options.map(o => (
+          <option key={o.v} value={o.v} className="bg-slate-900 text-white">{o.l}</option>
+        ))}
+      </select>
+    </div>
+  );
+}

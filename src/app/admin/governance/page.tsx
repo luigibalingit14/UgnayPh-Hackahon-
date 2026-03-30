@@ -35,7 +35,7 @@ export default function GovernanceAdminPage() {
       await fetch('/api/admin/resolve', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ table: "governance_reports", id, updatePayload: { status: newStatus } })
+        body: JSON.stringify({ table: "governance_complaints", id, updatePayload: { status: newStatus } })
       });
     } catch (e) {
       // Revert on failure

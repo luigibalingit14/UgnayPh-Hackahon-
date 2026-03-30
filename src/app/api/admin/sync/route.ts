@@ -16,8 +16,8 @@ export async function GET() {
     ] = await Promise.all([
       supabase.from("vibecheck_results").select("id, created_at, content, score, label_tagalog").order("created_at", { ascending: false }).limit(30),
       supabase.from("mobility_reports").select("id, created_at, location, city, incident_type, severity, description, is_resolved").order("created_at", { ascending: false }).limit(30),
-      supabase.from("governance_reports").select("id, created_at, title, description, category, status").order("created_at", { ascending: false }).limit(30),
-      supabase.from("jobs").select("id, created_at, title, company, location, is_active").order("created_at", { ascending: false }).limit(30),
+      supabase.from("governance_complaints").select("id, created_at, title, description, category, status").order("created_at", { ascending: false }).limit(30),
+      supabase.from("job_listings").select("id, created_at, title, company, location, is_active").order("created_at", { ascending: false }).limit(30),
       supabase.from("health_appointments").select("id, created_at, concern, status, preferred_date").order("created_at", { ascending: false }).limit(30),
       supabase.from("agri_prices").select("id, created_at, crop, price_per_kg, location, is_available").order("created_at", { ascending: false }).limit(30)
     ]);

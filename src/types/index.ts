@@ -57,6 +57,20 @@ export interface Profile {
   total_checks: number;
   created_at: string;
   updated_at: string;
+  // Extended citizen fields
+  full_name: string | null;
+  citizen_id: string | null;
+  age: number | null;
+  sex: string | null;
+  civil_status: string | null;
+  address: string | null;
+  barangay: string | null;
+  province: string | null;
+  region: string | null;
+  contact: string | null;
+  occupation: string | null;
+  philhealth_id: string | null;
+  voter_status: string | null;
 }
 
 // Report Types

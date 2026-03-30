@@ -135,7 +135,7 @@ export default function CommandCenterPage() {
       let payload = {};
       
       if (type === "mobility") { table = "mobility_reports"; payload = { is_resolved: true }; }
-      else if (type === "governance") { table = "governance_reports"; payload = { status: "resolved" }; }
+      else if (type === "governance") { table = "governance_complaints"; payload = { status: "resolved" }; }
       else if (type === "health") { table = "health_appointments"; payload = { status: "completed" }; }
       else if (type === "jobs") { table = "jobs"; payload = { is_active: false }; }
       else return;
