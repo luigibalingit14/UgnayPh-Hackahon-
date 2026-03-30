@@ -8,6 +8,11 @@ import {
 } from "lucide-react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
+import { Map, Overlay } from "pigeon-maps";
+
+function mapTiler(x: number, y: number, z: number) {
+  return `https://cartodb-basemaps-a.global.ssl.fastly.net/dark_all/${z}/${x}/${y}.png`;
+}
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(useGSAP);
@@ -147,48 +152,50 @@ export default function CommandCenterPage() {
                 </div>
               </div>
 
-              {/* Radar Map Container */}
-              <div className="flex-1 relative flex items-center justify-center">
-                {/* Radar Grid Circles */}
-                <div className="absolute border border-white/5 rounded-full w-[200px] h-[200px]" />
-                <div className="absolute border border-white/5 rounded-full w-[400px] h-[400px]" />
-                <div className="absolute border border-white/5 rounded-full w-[600px] h-[600px] opacity-50" />
-                
-                {/* Radar Sweep Animation (CSS only!) */}
-                <div className="absolute w-[400px] h-[400px] rounded-full border border-emerald-500/20 shadow-[0_0_50px_rgba(16,185,129,0.1)] before:content-[''] before:absolute before:top-1/2 before:left-1/2 before:w-[50%] before:h-2 before:bg-gradient-to-r before:from-transparent before:to-emerald-500/50 before:origin-[0_50%] animate-spin-slow opacity-60" style={{ animationDuration: '4s' }} />
+              {/* Pigeon Map Container */}
+              <div className="flex-1 relative flex items-center justify-center bg-[#0a0f1c] overflow-hidden rounded-b-2xl">
+                <Map 
+                  provider={mapTiler} 
+                  defaultCenter={[14.5995, 120.9842]}
+                  defaultZoom={11}
+                  metaWheelZoom={true}
+                >
+                  {/* CRITICAL: Severe Flooding */}
+                  <Overlay anchor={[14.6150, 120.9950]} offset={[8, 8]}>
+                    <div className="cc-map-ping relative flex h-4 w-4">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-600 shadow-[0_0_15px_rgba(225,29,72,0.8)] border-2 border-white/20"></span>
+                      <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-black/80 px-2 py-1 rounded text-[10px] border border-rose-500/50 text-rose-200 whitespace-nowrap shadow-xl">
+                        <p className="font-bold">CRITICAL: Severe Flooding</p>
+                        <p className="opacity-70 text-[9px]">Mobility & Gov Module</p>
+                      </div>
+                    </div>
+                  </Overlay>
 
-                {/* Simulated Data Points - Scattered around radar */}
-                <div className="cc-map-ping absolute top-[40%] left-[45%]">
-                  <span className="relative flex h-4 w-4">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-600 shadow-[0_0_15px_rgba(225,29,72,0.8)] border-2 border-white/20"></span>
-                  </span>
-                  <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-black/80 px-2 py-1 rounded text-[10px] border border-rose-500/50 text-rose-200 whitespace-nowrap shadow-xl">
-                    <p className="font-bold">CRITICAL: Severe Flooding</p>
-                    <p className="opacity-70 text-[9px]">Mobility & Gov Module</p>
-                  </div>
-                </div>
+                  {/* VibeCheck Alert */}
+                  <Overlay anchor={[14.5800, 121.0500]} offset={[6, 6]}>
+                    <div className="cc-map-ping relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75 animate-delay-150"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.8)] border border-white/20"></span>
+                    </div>
+                  </Overlay>
 
-                <div className="cc-map-ping absolute top-[60%] left-[55%]">
-                  <span className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75 animate-delay-150"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.8)] border border-white/20"></span>
-                  </span>
-                </div>
+                  {/* Mobility Alert */}
+                  <Overlay anchor={[14.6300, 121.0200]} offset={[6, 6]}>
+                    <div className="cc-map-ping relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75 animate-delay-300"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500 shadow-[0_0_10px_rgba(251,191,36,0.8)] border border-white/20"></span>
+                    </div>
+                  </Overlay>
 
-                <div className="cc-map-ping absolute top-[30%] left-[60%]">
-                  <span className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75 animate-delay-300"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500 shadow-[0_0_10px_rgba(251,191,36,0.8)] border border-white/20"></span>
-                  </span>
-                </div>
-
-                <div className="cc-map-ping absolute top-[50%] left-[30%]">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75 animate-delay-700"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500 border border-white/20"></span>
-                  </span>
-                </div>
+                  {/* Health Alert */}
+                  <Overlay anchor={[14.6700, 121.0400]} offset={[4, 4]}>
+                    <div className="cc-map-ping relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75 animate-delay-700"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500 border border-white/20"></span>
+                    </div>
+                  </Overlay>
+                </Map>
               </div>
             </div>
           </div>
