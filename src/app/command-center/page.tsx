@@ -9,6 +9,8 @@ import {
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { Map, Overlay } from "pigeon-maps";
+import { createClient } from "@/lib/supabase/client";
+import { formatDistanceToNow } from "date-fns";
 
 function mapTiler(x: number, y: number, z: number) {
   return `https://cartodb-basemaps-a.global.ssl.fastly.net/dark_all/${z}/${x}/${y}.png`;
@@ -18,37 +20,118 @@ if (typeof window !== "undefined") {
   gsap.registerPlugin(useGSAP);
 }
 
-// Simulated Live Data
-const recentEvents = [
-  { id: 1, type: "vibecheck", msg: "Phishing SMS detected in NCR", time: "Just now", color: "text-indigo-400" },
-  { id: 2, type: "mobility", msg: "Severe pothole reported at EDSA", time: "2m ago", color: "text-amber-400" },
-  { id: 3, type: "health", msg: "Dengue cluster possible in Region 3", time: "5m ago", color: "text-blue-400" },
-  { id: 4, type: "governance", msg: "Brgy. San Jose streetlights fixed", time: "12m ago", color: "text-rose-400" },
-  { id: 5, type: "agri", msg: "Low soil moisture warning in Isabela", time: "18m ago", color: "text-lime-400" },
-  { id: 6, type: "jobs", msg: "15 new LGU urgent hiring posted", time: "22m ago", color: "text-emerald-400" },
-];
+// Helper to convert string locations to approximate coordinates with a slight random jitter
+const CITY_COORDS: Record<string, [number, number]> = {
+  "manila": [14.5995, 120.9842],
+  "quezon": [14.6760, 121.0437],
+  "makati": [14.5547, 121.0244],
+  "taguig": [14.5204, 121.0538],
+  "pasig": [14.5764, 121.0851],
+  "cebu": [10.3157, 123.8854],
+  "davao": [7.1907, 125.4553],
+  "caloocan": [14.6465, 120.9733],
+  "pasay": [14.5378, 121.0014],
+  "mandaluyong": [14.5794, 121.0360],
+  "marikina": [14.6507, 121.1029]
+};
+
+function getApproxCoords(location: string): [number, number] {
+  if (!location) return [14.5995, 120.9842]; // default manila
+  const locLower = location.toLowerCase();
+  for (const [key, coords] of Object.entries(CITY_COORDS)) {
+    if (locLower.includes(key)) {
+      // Add a tiny random jitter so overlapping markers are separated (approx 500m radius)
+      return [
+        coords[0] + (Math.random() - 0.5) * 0.01,
+        coords[1] + (Math.random() - 0.5) * 0.01
+      ];
+    }
+  }
+  return [
+    14.5995 + (Math.random() - 0.5) * 0.1, 
+    120.9842 + (Math.random() - 0.5) * 0.1
+  ]; // scattered around MM if unknown
+}
 
 export default function CommandCenterPage() {
   const container = useRef<HTMLDivElement>(null);
-  const [liveEvents, setLiveEvents] = useState(recentEvents);
+  const [liveEvents, setLiveEvents] = useState<any[]>([]);
+  const [mapMarkers, setMapMarkers] = useState<any[]>([]);
+  const [isSyncing, setIsSyncing] = useState(true);
   
-  // Ticking metrics simulation
+  // Real metrics simulation
   const [metrics, setMetrics] = useState({
-    vibecheck: 12405, mobility: 843, health: 3120, 
-    governance: 589, agri: 420, jobs: 8900
+    vibecheck: 0, mobility: 0, health: 0, 
+    governance: 0, agri: 0, jobs: 0
   });
 
   useEffect(() => {
-    // Simulate real-time data ticking
-    const interval = setInterval(() => {
-      setMetrics(prev => ({
-        ...prev,
-        vibecheck: prev.vibecheck + Math.floor(Math.random() * 5),
-        mobility: prev.mobility + Math.floor(Math.random() * 2),
-        health: prev.health + Math.floor(Math.random() * 3),
-      }));
-    }, 3000);
-    return () => clearInterval(interval);
+    let mounted = true;
+    const fetchLiveData = async () => {
+      try {
+        setIsSyncing(true);
+        const supabase = createClient();
+        
+        // Fetch from the 6 endpoints (using supabase direct for health since it requires auth usually but we use general DB here for admin view)
+        const [vibeRes, mobRes, govRes, jobsRes, healthRes, agriRes] = await Promise.all([
+          fetch('/api/reports?limit=50').then(r=>r.json()).catch(()=>({success:true, reports:[]})),
+          fetch('/api/mobility').then(r=>r.json()).catch(()=>({success:true, reports:[]})),
+          fetch('/api/governance').then(r=>r.json()).catch(()=>({success:true, complaints:[]})),
+          fetch('/api/jobs').then(r=>r.json()).catch(()=>({success:true, jobs:[]})),
+          supabase.from("health_appointments").select("*").limit(50).order("created_at", { ascending: false }).then(d => d.data || []),
+          fetch('/api/agri').then(r=>r.json()).catch(()=>({success:true, prices:[]}))
+        ]);
+
+        if (!mounted) return;
+
+        // Parse lists safely
+        const v = Array.isArray(vibeRes.reports) ? vibeRes.reports : [];
+        const m = Array.isArray(mobRes.reports) ? mobRes.reports : [];
+        const g = Array.isArray(govRes.complaints) ? govRes.complaints : [];
+        const j = Array.isArray(jobsRes.jobs) ? jobsRes.jobs : [];
+        const h = healthRes;
+        const a = Array.isArray(agriRes.prices) ? agriRes.prices : [];
+
+        // Update real counts
+        setMetrics({
+          vibecheck: v.length,
+          mobility: m.length,
+          governance: g.length,
+          jobs: j.length,
+          health: h.length,
+          agri: a.length
+        });
+
+        // Consolidate into unified activity feed
+        const unified = [
+          ...v.map(item => ({ id: `v-${item.id}`, type: "vibecheck", msg: "Phishing/Scam link reported", date: new Date(item.created_at || Date.now()), latlng: getApproxCoords("manila"), severity: "amber" })),
+          ...m.map(item => ({ id: `m-${item.id}`, type: "mobility", msg: `${item.incident_type?.replace('_', ' ')} at ${item.location}`, date: new Date(item.created_at || Date.now()), latlng: getApproxCoords(item.city || item.location), severity: "rose" })),
+          ...g.map(item => ({ id: `g-${item.id}`, type: "governance", msg: `${item.title} - ${item.category}`, date: new Date(item.created_at || Date.now()), latlng: getApproxCoords("quezon"), severity: "amber" })),
+          ...h.map(item => ({ id: `h-${item.id}`, type: "health", msg: `Health concern: ${item.concern?.substring(0, 30)}...`, date: new Date(item.created_at || Date.now()), latlng: getApproxCoords("makati"), severity: "blue" })),
+          ...a.map(item => ({ id: `a-${item.id}`, type: "agri", msg: `Crop price post: ${item.crop}`, date: new Date(item.created_at || Date.now()), latlng: getApproxCoords(item.location), severity: "lime" })),
+          ...j.map(item => ({ id: `j-${item.id}`, type: "jobs", msg: `New job posted: ${item.title}`, date: new Date(item.created_at || Date.now()), latlng: getApproxCoords(item.location), severity: "emerald" }))
+        ];
+
+        // Sort globally by date (newest first)
+        unified.sort((a, b) => b.date.getTime() - a.date.getTime());
+
+        // Extract visual items
+        setLiveEvents(unified.slice(0, 15)); // top 15 feed
+        
+        // Take the 15 most urgent items for map overlay
+        const mapItems = unified.filter(u => ["vibecheck", "mobility", "health"].includes(u.type)).slice(0, 12);
+        setMapMarkers(mapItems);
+
+      } catch (e) {
+        console.error("Dashboard Sync Failed", e);
+      } finally {
+        setIsSyncing(false);
+      }
+    };
+
+    fetchLiveData();
+    const inv = setInterval(fetchLiveData, 15000); // 15 seconds polling
+    return () => { mounted = false; clearInterval(inv); };
   }, []);
 
   useGSAP(() => {
@@ -89,8 +172,8 @@ export default function CommandCenterPage() {
           </div>
           
           <div className="flex items-center gap-3 bg-white/5 rounded-full px-4 py-2 border border-white/10 text-sm font-mono text-white/70">
-            <RefreshCcw className="h-3 w-3 animate-spin duration-3000" />
-            Last Sync: Real-time
+            <RefreshCcw className={`h-3 w-3 ${isSyncing ? "animate-spin text-emerald-400" : "text-white/40"}`} />
+            Last Sync: {isSyncing ? "Syncing DB..." : "Real-time active"}
           </div>
         </header>
 
@@ -161,41 +244,32 @@ export default function CommandCenterPage() {
                     defaultZoom={11}
                     metaWheelZoom={true}
                   >
-                  {/* CRITICAL: Severe Flooding */}
-                  <Overlay anchor={[14.6150, 120.9950]} offset={[8, 8]}>
-                    <div className="cc-map-ping relative flex h-4 w-4">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-600 shadow-[0_0_15px_rgba(225,29,72,0.8)] border-2 border-white/20"></span>
-                      <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-black/80 px-2 py-1 rounded text-[10px] border border-rose-500/50 text-rose-200 whitespace-nowrap shadow-xl">
-                        <p className="font-bold">CRITICAL: Severe Flooding</p>
-                        <p className="opacity-70 text-[9px]">Mobility & Gov Module</p>
-                      </div>
-                    </div>
-                  </Overlay>
-
-                  {/* VibeCheck Alert */}
-                  <Overlay anchor={[14.5800, 121.0500]} offset={[6, 6]}>
-                    <div className="cc-map-ping relative flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75 animate-delay-150"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.8)] border border-white/20"></span>
-                    </div>
-                  </Overlay>
-
-                  {/* Mobility Alert */}
-                  <Overlay anchor={[14.6300, 121.0200]} offset={[6, 6]}>
-                    <div className="cc-map-ping relative flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75 animate-delay-300"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500 shadow-[0_0_10px_rgba(251,191,36,0.8)] border border-white/20"></span>
-                    </div>
-                  </Overlay>
-
-                  {/* Health Alert */}
-                  <Overlay anchor={[14.6700, 121.0400]} offset={[4, 4]}>
-                    <div className="cc-map-ping relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75 animate-delay-700"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500 border border-white/20"></span>
-                    </div>
-                  </Overlay>
+                  {/* Real Database Generated Pings */}
+                  {mapMarkers.map((m, i) => {
+                    // Decide color based on severity/type mapping
+                    const colorMap: any = { rose: "bg-rose-500", amber: "bg-amber-400", blue: "bg-blue-500", indigo: "bg-indigo-400" };
+                    const shadowMap: any = { rose: "shadow-[0_0_15px_rgba(225,29,72,0.8)] border-rose-400", amber: "shadow-[0_0_15px_rgba(251,191,36,0.8)] border-amber-300", blue: "shadow-[0_0_15px_rgba(59,130,246,0.8)] border-blue-400", indigo: "shadow-[0_0_15px_rgba(99,102,241,0.8)] border-indigo-400" };
+                    const bgCircle = colorMap[m.severity] || "bg-emerald-500";
+                    const borderGlow = shadowMap[m.severity] || "border-white/20";
+                    
+                    return (
+                      <Overlay key={m.id} anchor={m.latlng} offset={[6, 6]}>
+                        <div className="cc-map-ping relative flex h-3 w-3 group/ping cursor-pointer">
+                          <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${bgCircle} opacity-75`} style={{ animationDelay: `${i * 150}ms`}}></span>
+                          <span className={`relative inline-flex rounded-full h-3 w-3 ${bgCircle} ${borderGlow} border z-10 hover:scale-150 transition-transform`}></span>
+                          
+                          {/* Invisible hover area strictly for tooltip */}
+                          <div className="absolute inset-0 z-20" />
+                          
+                          {/* Tooltip */}
+                          <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-black/90 px-3 py-2 rounded-lg text-[10px] border border-white/20 text-white whitespace-nowrap shadow-2xl opacity-0 scale-90 group-hover/ping:opacity-100 group-hover/ping:scale-100 transition-all pointer-events-none z-30 transform-gpu">
+                            <p className="font-bold text-xs uppercase tracking-wider mb-1 opacity-90">{m.type}</p>
+                            <p className="opacity-80 max-w-[200px] truncate">{m.msg}</p>
+                          </div>
+                        </div>
+                      </Overlay>
+                    );
+                  })}
                 </Map>
                 </div>
               </div>
@@ -214,13 +288,19 @@ export default function CommandCenterPage() {
                 </h3>
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-                {liveEvents.map((event) => (
-                  <div key={event.id} className="group relative pl-4 pb-4 border-l border-white/10 last:border-transparent last:pb-0">
-                    <div className={`absolute -left-[5px] top-0.5 h-2.5 w-2.5 rounded-full bg-current ${event.color} shadow-[0_0_8px_currentColor]`} />
-                    <p className="text-[10px] text-white/40 mb-1">{event.time} • {event.type.toUpperCase()}</p>
-                    <p className="text-sm text-white/90 leading-tight group-hover:text-white transition-colors">{event.msg}</p>
-                  </div>
-                ))}
+                {liveEvents.length === 0 && !isSyncing ? (
+                  <p className="text-white/40 text-xs italic">No activity globally right now.</p>
+                ) : liveEvents.map((event) => {
+                  const colors: any = { vibecheck:"text-indigo-400 bg-indigo-500", mobility:"text-amber-400 bg-amber-500", governance:"text-rose-400 bg-rose-500", health:"text-blue-400 bg-blue-500", agri:"text-lime-400 bg-lime-500", jobs:"text-emerald-400 bg-emerald-500" };
+                  const colorStr = colors[event.type] || "text-white bg-white";
+                  return (
+                    <div key={event.id} className="group relative pl-4 pb-4 border-l border-white/10 last:border-transparent last:pb-0">
+                      <div className={`absolute -left-[5px] top-0.5 h-2.5 w-2.5 rounded-full bg-current ${colorStr.split(" ")[0]} shadow-[0_0_8px_currentColor]`} />
+                      <p className="text-[10px] text-white/40 mb-1">{formatDistanceToNow(event.date, { addSuffix: true })} • {event.type.toUpperCase()}</p>
+                      <p className="text-sm text-white/90 leading-tight group-hover:text-white transition-colors">{event.msg}</p>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
