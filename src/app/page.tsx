@@ -186,10 +186,6 @@ export default function HomePage() {
                 Explore All Modules
                 <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link href="/command-center" className="flex items-center gap-2 px-6 py-3.5 rounded-full text-base font-semibold bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition-all shadow-[0_0_15px_rgba(225,29,72,0.15)] focus:ring-2 focus:ring-rose-500/50">
-                <ShieldAlert className="h-5 w-5" />
-                LGU Command Center
-              </Link>
             </div>
 
             <div className="hero-cta">

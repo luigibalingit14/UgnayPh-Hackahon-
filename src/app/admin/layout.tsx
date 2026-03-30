@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ShieldCheck, Truck, BarChart3, LockKeyhole, Search, LogOut, ChevronRight, Activity } from "lucide-react";
+import { ShieldCheck, Truck, BarChart3, LockKeyhole, Search, LogOut, ChevronRight, Activity, Radio } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -106,20 +106,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Truck className="h-5 w-5" />
             <span className="font-semibold text-sm">Mobility Dispatch</span>
           </Link>
-          
-          <div className="pt-4 mt-4 border-t border-slate-800">
-            <Link 
-               href="/command-center"
-               target="_blank"
-               className="flex items-center justify-between px-4 py-2 rounded-lg text-slate-500 hover:text-emerald-400 group transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4" />
-                <span className="text-xs font-semibold uppercase tracking-wider">Radar Monitor</span>
-              </div>
-              <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </Link>
-          </div>
+          <Link 
+            href="/admin/command-center" 
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${pathname.includes('/admin/command-center') ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+          >
+            <Radio className="h-5 w-5" />
+            <span className="font-semibold text-sm">Radar Monitor</span>
+          </Link>
         </nav>
 
         <div className="p-4 border-t border-slate-800">
