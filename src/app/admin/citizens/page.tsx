@@ -195,14 +195,14 @@ export default function CitizenRecordsPage() {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <InfoChip icon={User} label="Age / Sex" value={`${selectedCitizen.age} yrs / ${selectedCitizen.sex}`} />
-              <InfoChip icon={MapPin} label="Address" value={`${selectedCitizen.barangay}, ${selectedCitizen.city}`} />
-              <InfoChip icon={Briefcase} label="Occupation" value={selectedCitizen.occupation} />
-              <InfoChip icon={Shield} label="PhilHealth" value={selectedCitizen.philhealth_id} />
-              <InfoChip icon={Phone} label="Contact" value={selectedCitizen.contact} />
-              <InfoChip icon={Mail} label="Email" value={selectedCitizen.email} />
-              <InfoChip icon={FileText} label="Civil Status" value={selectedCitizen.civil_status} />
-              <InfoChip icon={Vote} label="Region" value={selectedCitizen.region} />
+              <InfoChip icon={User} label="Age / Sex" value={`${selectedCitizen.age || '—'} yrs / ${selectedCitizen.sex || '—'}`} />
+              <InfoChip icon={MapPin} label="Address" value={selectedCitizen.address ? `${selectedCitizen.barangay || ''}, ${selectedCitizen.city || ''}` : selectedCitizen.city || '—'} />
+              <InfoChip icon={Briefcase} label="Occupation" value={selectedCitizen.occupation || '—'} />
+              <InfoChip icon={Shield} label="PhilHealth" value={selectedCitizen.philhealth_id || '—'} />
+              <InfoChip icon={Phone} label="Contact" value={selectedCitizen.contact || '—'} />
+              <InfoChip icon={Mail} label="Email" value={selectedCitizen.email || '—'} />
+              <InfoChip icon={FileText} label="Civil Status" value={selectedCitizen.civil_status || '—'} />
+              <InfoChip icon={Vote} label="Region" value={selectedCitizen.region || '—'} />
             </div>
           </div>
         )}
