@@ -65,7 +65,7 @@ export default function CommandCenterPage() {
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none opacity-20" />
       <div className="absolute inset-0 bg-gradient-to-b from-indigo-900/10 via-transparent to-rose-900/10 pointer-events-none" />
 
-      <div className="relative z-10 p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto h-screen flex flex-col">
+      <div className="relative z-10 p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto min-h-screen py-24 flex flex-col">
         
         {/* HEADER */}
         <header className="cc-header flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 shrink-0 border-b border-white/10 pb-6">
@@ -153,13 +153,14 @@ export default function CommandCenterPage() {
               </div>
 
               {/* Pigeon Map Container */}
-              <div className="flex-1 relative flex items-center justify-center bg-[#0a0f1c] overflow-hidden rounded-b-2xl">
-                <Map 
-                  provider={mapTiler} 
-                  defaultCenter={[14.5995, 120.9842]}
-                  defaultZoom={11}
-                  metaWheelZoom={true}
-                >
+              <div className="flex-1 w-full relative bg-[#0a0f1c] overflow-hidden rounded-b-2xl min-h-[400px]">
+                <div className="absolute inset-0">
+                  <Map 
+                    provider={mapTiler} 
+                    defaultCenter={[14.5995, 120.9842]}
+                    defaultZoom={11}
+                    metaWheelZoom={true}
+                  >
                   {/* CRITICAL: Severe Flooding */}
                   <Overlay anchor={[14.6150, 120.9950]} offset={[8, 8]}>
                     <div className="cc-map-ping relative flex h-4 w-4">
@@ -196,6 +197,7 @@ export default function CommandCenterPage() {
                     </div>
                   </Overlay>
                 </Map>
+                </div>
               </div>
             </div>
           </div>
