@@ -148,9 +148,9 @@ export default function CommandCenterPage() {
       }).then(r => r.json());
 
       if (res.success) {
-        // Optimistic UI update to remove from actionable feed immediately
-        setLiveEvents(prev => prev.filter(e => e.id !== id));
-        setMapMarkers(prev => prev.filter(m => m.id !== id));
+        // Optimistic UI update to turn the marker GREEN instead of disappearing immediately
+        setLiveEvents(prev => prev.map(e => e.id === id ? { ...e, resolvable: false, isResolved: true, severity: "emerald" } : e));
+        setMapMarkers(prev => prev.map(m => m.id === id ? { ...m, resolvable: false, isResolved: true, severity: "emerald" } : m));
       }
     } catch (e) {
       console.error(e);
@@ -287,9 +287,23 @@ export default function CommandCenterPage() {
                           <div className="absolute inset-0 z-20" />
                           
                           {/* Tooltip */}
-                          <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-black/90 px-3 py-2 rounded-lg text-[10px] border border-white/20 text-white whitespace-nowrap shadow-2xl opacity-0 scale-90 group-hover/ping:opacity-100 group-hover/ping:scale-100 transition-all pointer-events-none z-30 transform-gpu">
-                            <p className="font-bold text-xs uppercase tracking-wider mb-1 opacity-90">{m.type}</p>
-                            <p className="opacity-80 max-w-[200px] truncate">{m.msg}</p>
+                          <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-black/90 px-3 py-2 rounded-lg text-[10px] border border-white/20 text-white shadow-2xl opacity-0 scale-90 group-hover/ping:opacity-100 group-hover/ping:scale-100 transition-all z-30 transform-gpu pointer-events-auto flex flex-col items-center gap-2 min-w-[140px]">
+                            <p className="font-bold text-xs uppercase tracking-wider opacity-90">{m.type}</p>
+                            <p className="opacity-80 max-w-[200px] truncate text-center">{m.msg}</p>
+                            {m.resolvable && (
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); handleResolve(m.id, m.type); }}
+                                disabled={resolvingId === m.id}
+                                className="w-full bg-emerald-500/20 hover:bg-emerald-500 text-emerald-400 hover:text-white border border-emerald-500/50 hover:border-emerald-500 px-3 py-1 rounded-md transition-all font-semibold shadow-[0_0_10px_rgba(16,185,129,0.2)] disabled:opacity-50"
+                              >
+                                {resolvingId === m.id ? "Resolving..." : "Mark as Resolved"}
+                              </button>
+                            )}
+                            {m.isResolved && (
+                              <p className="text-emerald-400 font-bold tracking-widest text-[9px] uppercase px-2 py-1 bg-emerald-500/10 rounded-full w-full text-center border border-emerald-500/20">
+                                ✓ Resolved
+                              </p>
+                            )}
                           </div>
                         </div>
                       </Overlay>
