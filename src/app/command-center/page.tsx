@@ -58,6 +58,7 @@ export default function CommandCenterPage() {
   const [liveEvents, setLiveEvents] = useState<any[]>([]);
   const [mapMarkers, setMapMarkers] = useState<any[]>([]);
   const [isSyncing, setIsSyncing] = useState(true);
+  const [resolvingId, setResolvingId] = useState<string | null>(null);
   
   // Real metrics simulation
   const [metrics, setMetrics] = useState({
@@ -72,25 +73,18 @@ export default function CommandCenterPage() {
         setIsSyncing(true);
         const supabase = createClient();
         
-        // Fetch from the 6 endpoints (using supabase direct for health since it requires auth usually but we use general DB here for admin view)
-        const [vibeRes, mobRes, govRes, jobsRes, healthRes, agriRes] = await Promise.all([
-          fetch('/api/reports?limit=50').then(r=>r.json()).catch(()=>({success:true, reports:[]})),
-          fetch('/api/mobility').then(r=>r.json()).catch(()=>({success:true, reports:[]})),
-          fetch('/api/governance').then(r=>r.json()).catch(()=>({success:true, complaints:[]})),
-          fetch('/api/jobs').then(r=>r.json()).catch(()=>({success:true, jobs:[]})),
-          supabase.from("health_appointments").select("*").limit(50).order("created_at", { ascending: false }).then(d => d.data || []),
-          fetch('/api/agri').then(r=>r.json()).catch(()=>({success:true, prices:[]}))
-        ]);
+        const res = await fetch('/api/admin/sync').then(r => r.json());
+        if (!res.success || !res.data) throw new Error("Sync failed");
 
         if (!mounted) return;
 
-        // Parse lists safely
-        const v = Array.isArray(vibeRes.reports) ? vibeRes.reports : [];
-        const m = Array.isArray(mobRes.reports) ? mobRes.reports : [];
-        const g = Array.isArray(govRes.complaints) ? govRes.complaints : [];
-        const j = Array.isArray(jobsRes.jobs) ? jobsRes.jobs : [];
-        const h = healthRes;
-        const a = Array.isArray(agriRes.prices) ? agriRes.prices : [];
+        // Parse lists from unified payload
+        const v = res.data.vibecheck || [];
+        const m = res.data.mobility || [];
+        const g = res.data.governance || [];
+        const j = res.data.jobs || [];
+        const h = res.data.health || [];
+        const a = res.data.agri || [];
 
         // Update real counts
         setMetrics({
@@ -104,12 +98,12 @@ export default function CommandCenterPage() {
 
         // Consolidate into unified activity feed
         const unified = [
-          ...v.map(item => ({ id: `v-${item.id}`, type: "vibecheck", msg: "Phishing/Scam link reported", date: new Date(item.created_at || Date.now()), latlng: getApproxCoords("manila"), severity: "amber" })),
-          ...m.map(item => ({ id: `m-${item.id}`, type: "mobility", msg: `${item.incident_type?.replace('_', ' ')} at ${item.location}`, date: new Date(item.created_at || Date.now()), latlng: getApproxCoords(item.city || item.location), severity: "rose" })),
-          ...g.map(item => ({ id: `g-${item.id}`, type: "governance", msg: `${item.title} - ${item.category}`, date: new Date(item.created_at || Date.now()), latlng: getApproxCoords("quezon"), severity: "amber" })),
-          ...h.map(item => ({ id: `h-${item.id}`, type: "health", msg: `Health concern: ${item.concern?.substring(0, 30)}...`, date: new Date(item.created_at || Date.now()), latlng: getApproxCoords("makati"), severity: "blue" })),
-          ...a.map(item => ({ id: `a-${item.id}`, type: "agri", msg: `Crop price post: ${item.crop}`, date: new Date(item.created_at || Date.now()), latlng: getApproxCoords(item.location), severity: "lime" })),
-          ...j.map(item => ({ id: `j-${item.id}`, type: "jobs", msg: `New job posted: ${item.title}`, date: new Date(item.created_at || Date.now()), latlng: getApproxCoords(item.location), severity: "emerald" }))
+          ...v.map((item:any) => ({ id: `v-${item.id}`, type: "vibecheck", msg: "Phishing/Scam link reported", date: new Date(item.created_at || Date.now()), latlng: getApproxCoords("manila"), severity: "indigo", resolvable: false })),
+          ...m.filter((i:any)=>!i.is_resolved).map((item:any) => ({ id: `m-${item.id}`, type: "mobility", msg: `${item.incident_type?.replace('_', ' ')} at ${item.location}`, date: new Date(item.created_at || Date.now()), latlng: getApproxCoords(item.city || item.location), severity: "rose", resolvable: true })),
+          ...g.filter((i:any)=>i.status !== "resolved").map((item:any) => ({ id: `g-${item.id}`, type: "governance", msg: `${item.title} - ${item.category}`, date: new Date(item.created_at || Date.now()), latlng: getApproxCoords("quezon"), severity: "amber", resolvable: true })),
+          ...h.filter((i:any)=>i.status !== "completed").map((item:any) => ({ id: `h-${item.id}`, type: "health", msg: `Health concern: ${item.concern?.substring(0, 30)}...`, date: new Date(item.created_at || Date.now()), latlng: getApproxCoords("makati"), severity: "blue", resolvable: true })),
+          ...a.map((item:any) => ({ id: `a-${item.id}`, type: "agri", msg: `Crop price post: ${item.crop}`, date: new Date(item.created_at || Date.now()), latlng: getApproxCoords(item.location), severity: "lime", resolvable: false })),
+          ...j.filter((i:any)=>i.is_active).map((item:any) => ({ id: `j-${item.id}`, type: "jobs", msg: `New job posted: ${item.title}`, date: new Date(item.created_at || Date.now()), latlng: getApproxCoords(item.location), severity: "emerald", resolvable: true }))
         ];
 
         // Sort globally by date (newest first)
@@ -133,6 +127,37 @@ export default function CommandCenterPage() {
     const inv = setInterval(fetchLiveData, 15000); // 15 seconds polling
     return () => { mounted = false; clearInterval(inv); };
   }, []);
+
+  const handleResolve = async (id: string, type: string) => {
+    try {
+      setResolvingId(id);
+      const realId = id.substring(2);
+      let table = "";
+      let payload = {};
+      
+      if (type === "mobility") { table = "mobility_reports"; payload = { is_resolved: true }; }
+      else if (type === "governance") { table = "governance_reports"; payload = { status: "resolved" }; }
+      else if (type === "health") { table = "health_appointments"; payload = { status: "completed" }; }
+      else if (type === "jobs") { table = "jobs"; payload = { is_active: false }; }
+      else return;
+
+      const res = await fetch('/api/admin/resolve', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ table, id: realId, updatePayload: payload })
+      }).then(r => r.json());
+
+      if (res.success) {
+        // Optimistic UI update to remove from actionable feed immediately
+        setLiveEvents(prev => prev.filter(e => e.id !== id));
+        setMapMarkers(prev => prev.filter(m => m.id !== id));
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setResolvingId(null);
+    }
+  };
 
   useGSAP(() => {
     const tl = gsap.timeline();
@@ -294,10 +319,19 @@ export default function CommandCenterPage() {
                   const colors: any = { vibecheck:"text-indigo-400 bg-indigo-500", mobility:"text-amber-400 bg-amber-500", governance:"text-rose-400 bg-rose-500", health:"text-blue-400 bg-blue-500", agri:"text-lime-400 bg-lime-500", jobs:"text-emerald-400 bg-emerald-500" };
                   const colorStr = colors[event.type] || "text-white bg-white";
                   return (
-                    <div key={event.id} className="group relative pl-4 pb-4 border-l border-white/10 last:border-transparent last:pb-0">
+                    <div key={event.id} className="group relative pl-4 pb-4 border-l border-white/10 last:border-transparent last:pb-0 flex flex-col items-start">
                       <div className={`absolute -left-[5px] top-0.5 h-2.5 w-2.5 rounded-full bg-current ${colorStr.split(" ")[0]} shadow-[0_0_8px_currentColor]`} />
                       <p className="text-[10px] text-white/40 mb-1">{formatDistanceToNow(event.date, { addSuffix: true })} • {event.type.toUpperCase()}</p>
-                      <p className="text-sm text-white/90 leading-tight group-hover:text-white transition-colors">{event.msg}</p>
+                      <p className="text-sm text-white/90 leading-tight group-hover:text-white transition-colors mb-2">{event.msg}</p>
+                      {event.resolvable && (
+                        <button 
+                          onClick={() => handleResolve(event.id, event.type)}
+                          disabled={resolvingId === event.id}
+                          className="bg-white/10 hover:bg-emerald-500/20 text-white/70 hover:text-emerald-400 border border-white/20 hover:border-emerald-500/50 text-[10px] px-3 py-1 rounded-md transition-all flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {resolvingId === event.id ? "Resolving..." : "Mark as Resolved"}
+                        </button>
+                      )}
                     </div>
                   );
                 })}
