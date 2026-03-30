@@ -106,10 +106,18 @@ export default function DashboardPage() {
         voter_status: profileForm.voter_status || null,
       };
       const { error } = await supabase.from('profiles').update(updateData).eq('id', user.id);
-      if (!error) {
-        window.location.reload();
+      if (error) {
+        console.error("Supabase Save Error:", error);
+        alert("Failed to save profile: " + error.message);
+        return; // Stop here if there's an error
       }
-    } catch (e) { console.error(e) }
+      
+      // If success
+      window.location.reload();
+    } catch (e) { 
+      console.error(e);
+      alert("An unexpected error occurred.");
+    }
     setIsEditingProfile(false);
   };
 
@@ -633,7 +641,7 @@ function ProfileInput({ label, value, onChange, placeholder, type = "text" }: { 
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-white/05 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all"
+        className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-400 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all"
       />
     </div>
   );
@@ -647,7 +655,7 @@ function ProfileSelect({ label, value, onChange, options }: { label: string; val
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-white/05 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all appearance-none cursor-pointer"
+        className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all appearance-none cursor-pointer"
       >
         {options.map(o => (
           <option key={o.v} value={o.v} className="bg-slate-900 text-white">{o.l}</option>
