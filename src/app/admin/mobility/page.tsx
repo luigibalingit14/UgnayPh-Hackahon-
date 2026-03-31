@@ -34,18 +34,26 @@ function getApproxCoords(location: string): [number, number] {
 
 export default function MobilityAdminPage() {
   const [reports, setReports] = useState<any[]>([]);
+  const [trafficNodes, setTrafficNodes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSimulating, setIsSimulating] = useState(false);
 
   const fetchData = async () => {
     try {
+      // Fetch incidents
       const res = await fetch("/api/admin/sync").then(r => r.json());
       if (res.success && res.data) {
-        // Map pseudo latlng
         const mdata = (res.data.mobility || []).map((m: any) => ({
           ...m,
           latlng: getApproxCoords(m.city || m.location)
         }));
         setReports(mdata);
+      }
+
+      // Fetch literal traffic nodes
+      const tRes = await fetch("/api/admin/traffic").then(r => r.json());
+      if (tRes.success) {
+         setTrafficNodes(tRes.data);
       }
     } catch(err) {
       console.error(err);
@@ -56,7 +64,25 @@ export default function MobilityAdminPage() {
 
   useEffect(() => {
     fetchData();
+    // Auto-poll traffic nodes every 10 seconds for real-time demo feel
+    const interval = setInterval(() => {
+        fetch("/api/admin/traffic")
+          .then(r => r.json())
+          .then(res => { if(res.success) setTrafficNodes(res.data); })
+          .catch(console.error);
+    }, 10000);
+    return () => clearInterval(interval);
   }, []);
+
+  const handleSimulate = async () => {
+    setIsSimulating(true);
+    try {
+      await fetch('/api/admin/traffic/simulate', { method: "POST" });
+      await fetchData(); // refresh UI immediately
+    } finally {
+      setIsSimulating(false);
+    }
+  };
 
   const handleToggleResolve = async (id: string, currentStatus: boolean) => {
     setReports(prev => prev.map(r => r.id === id ? { ...r, is_resolved: !currentStatus } : r));
@@ -128,17 +154,62 @@ export default function MobilityAdminPage() {
 
       {/* Right Map Pane */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative min-h-[400px]">
-        <div className="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur-md px-4 py-2 rounded-xl shadow-lg border border-slate-100 flex gap-4 text-xs font-bold text-slate-700 pointer-events-none">
-          <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-rose-500" /> Pending Hazard</div>
-          <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-emerald-500" /> Cleared</div>
+        {/* Top Controls Float */}
+        <div className="absolute top-4 left-4 z-10 flex flex-col gap-2 pointer-events-none">
+           {/* Legend Box */}
+           <div className="bg-white/90 backdrop-blur-md px-4 py-3 rounded-xl shadow-lg border border-slate-100 flex gap-4 text-xs font-bold text-slate-700 pointer-events-auto">
+             <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)] animate-pulse" /> Heavy Traffic</div>
+             <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]" /> Moderate</div>
+             <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" /> Light / Fast</div>
+           </div>
+        </div>
+
+        <div className="absolute top-4 right-4 z-10 pointer-events-auto">
+           <button 
+             onClick={handleSimulate}
+             disabled={isSimulating}
+             className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl shadow-lg border border-indigo-800 text-xs font-bold flex items-center gap-2 transition-all transition-transform active:scale-95 disabled:opacity-50"
+           >
+             {isSimulating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4" />}
+             Simulate Live Traffic
+           </button>
         </div>
 
         <Map 
           provider={mapTiler} 
-          defaultCenter={[14.5995, 120.9842]}
-          defaultZoom={11}
+          defaultCenter={[14.6060, 121.0350]} // Center around Metro Manila Traffic Hub
+          defaultZoom={12}
           metaWheelZoom={true}
         >
+          {/* Traffic Nodes (Google Maps/Waze style speed trackers) */}
+          {trafficNodes.map((node) => {
+            const isHeavy = node.status === 'heavy';
+            const isMedium = node.status === 'medium';
+            const colorClass = isHeavy ? 'bg-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.8)]' : 
+                               isMedium ? 'bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.8)]' : 
+                               'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]';
+            
+            return (
+              <Overlay key={`traffic-${node.id}`} anchor={[node.lat, node.lng]} offset={[10, 10]}>
+                 <div className="relative group/traffic cursor-pointer origin-center">
+                    {/* Pulsing Core */}
+                    <div className={`w-5 h-5 rounded-full ${colorClass} ${isHeavy ? 'animate-pulse' : ''} border-2 border-white`} />
+                    
+                    {/* Tooltip */}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-slate-900 border border-slate-700 text-white text-[10px] px-3 py-2 rounded-lg shadow-xl opacity-0 scale-90 group-hover/traffic:opacity-100 group-hover/traffic:scale-100 transition-all pointer-events-none whitespace-nowrap z-40">
+                      <div className="flex justify-between items-center gap-4 mb-1 border-b border-slate-700 pb-1">
+                        <p className="font-bold opacity-80">{node.road_name}</p>
+                        <p className={`font-black tracking-wider ${isHeavy ? 'text-rose-400' : isMedium ? 'text-amber-400' : 'text-emerald-400'}`}>{node.current_speed} km/h</p>
+                      </div>
+                      <p className="text-[9px] text-slate-400">Node: {node.name}</p>
+                      <p className="text-[8px] text-slate-500">Updated: {formatDistanceToNow(new Date(node.last_updated), { addSuffix: true })}</p>
+                    </div>
+                 </div>
+              </Overlay>
+            );
+          })}
+
+          {/* Incident Reports (Waze style Pins) */}
           {reports.map((m, i) => (
             <Overlay key={`map-${m.id}`} anchor={m.latlng} offset={[16, 32]}>
               <div className="relative group/pin cursor-pointer transform hover:scale-110 transition-transform origin-bottom">
