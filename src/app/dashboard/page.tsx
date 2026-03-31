@@ -628,7 +628,7 @@ export default function DashboardPage() {
                
                <div className="mx-auto bg-slate-50 p-4 rounded-2xl w-fit mb-6 border-2 border-slate-100 shadow-inner">
                  <img 
-                   src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin + "/verify/" + getCitizenId() : "")}&bgcolor=ffffff&color=2e1065&margin=0`} 
+                   src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent("https://ugnay-ph-hackahon.vercel.app/verify/" + getCitizenId())}&bgcolor=ffffff&color=2e1065&margin=0`} 
                    alt="Citizen QR Code" 
                    width={200} height={200}
                    className="rounded-xl w-[200px] h-[200px] mx-auto opacity-90"
