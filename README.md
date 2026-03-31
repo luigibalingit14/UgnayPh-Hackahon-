@@ -29,12 +29,15 @@
 
 ## ✨ Key Features
 
-- 🤖 **AI-Powered Analysis** — Uses Google Gemini 1.5 Flash for multimodal image scanning and Groq Llama for ultra-fast text analysis
-- 💬 **Bayanihan Bot** — A global floating AI chatbot trained specifically on Philippine social issues, emergency hotlines, and all 6 UgnayPH modules
-- 📊 **Personal Dashboard** — A citizen hub showing all your activity across every module in one view
-- 🔐 **Secure Authentication** — Supabase-powered Google OAuth login, no password needed
-- 🌐 **Progressive Web App** — Fully responsive, works on any device, with mobile-first design
-- ⚡ **Glassmorphism UI** — Modern design with GSAP-powered animations, dark mode, and vibrant color palette
+- 🔗 **Digital Bayanihan Chain** — Immutable, blockchain-inspired public ledger displaying real 2026 Philippine National Budget allocations to ensure anti-corruption transparency.
+- 🆔 **E-Gov Digital ID** — Auto-generated, secure Citizen QR codes that LGU officers can instantly scan to verify identities, PhilHealth, and voter status.
+- 🏢 **LGU Enterprise Portal** — A dedicated, PIN-protected admin dashboard for LGUs to conduct live citizen searches and manage public reports.
+- 🤖 **AI-Powered Analysis** — Uses Google Gemini 1.5 Flash for multimodal image scanning and Groq Llama for ultra-fast text analysis.
+- 💬 **Bayanihan Bot** — A global floating AI chatbot trained specifically on Philippine social issues, emergency hotlines, and all 6 UgnayPH modules.
+- 📊 **Personal Dashboard** — A citizen hub showing all your activity across every module in one view.
+- 🔐 **Secure Authentication** — Supabase-powered Google OAuth login, no password needed.
+- 🌐 **Progressive Web App** — Fully responsive, works on any device, with mobile-first design.
+- ⚡ **Glassmorphism UI** — Modern design with GSAP-powered animations, dark mode, and vibrant color palette.
 
 ---
 
@@ -46,6 +49,7 @@
 - **Tailwind CSS** — Custom design system with glassmorphism effects
 - **GSAP** — Advanced animation library for smooth UI transitions
 - **Lucide React** — Professional icon library (emoji-free UI)
+- **QR Server API** — Dynamic generation of secure Digital Citizen IDs
 
 ### Backend & Database
 - **Supabase** — PostgreSQL database, Row Level Security (RLS), and real-time subscriptions
@@ -111,7 +115,7 @@ NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 GROQ_API_KEY=your_groq_api_key
 GEMINI_API_KEY=your_google_gemini_api_key
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=https://ugnay-ph-hackahon.vercel.app
 ```
 
 ---
@@ -120,7 +124,8 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 The platform uses **Supabase (PostgreSQL)** with the following core tables:
 
-- `profiles` — User account data linked to Supabase Auth
+- `profiles` — User account data linked to Supabase Auth and Digital APIs
+- `blockchain_records` — (Simulated) Immutable records for the Bayanihan Chain
 - `vibecheck_results` — Stored AI analysis history per user
 - `mobility_reports` — Road and traffic issue submissions
 - `governance_reports` — Government service complaints
@@ -128,7 +133,7 @@ The platform uses **Supabase (PostgreSQL)** with the following core tables:
 - `health_bookings` — Telemedicine appointments
 - `agri_reports` — Crop and farming reports
 
-All tables use **Row Level Security (RLS)** to ensure each user can only access their own data.
+All tables use **Row Level Security (RLS)** to ensure each user can only access their own data, while the Admin portal bypasses RLS securely via service roles.
 
 ---
 
