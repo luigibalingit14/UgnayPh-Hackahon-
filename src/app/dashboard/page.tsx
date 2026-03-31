@@ -104,6 +104,7 @@ export default function DashboardPage() {
         occupation: profileForm.occupation || null,
         philhealth_id: profileForm.philhealth_id || null,
         voter_status: profileForm.voter_status || null,
+        citizen_id: profile?.citizen_id || (user?.id ? 'UPH-' + user.id.substring(0,4).toUpperCase() + '-' + user.id.substring(9,13).toUpperCase() : 'UPH-0000-0000'),
       };
       const { error } = await supabase.from('profiles').update(updateData).eq('id', user.id);
       if (error) {
