@@ -38,6 +38,7 @@ export default function MobilityAdminPage() {
   const [loading, setLoading] = useState(true);
   const [isSimulating, setIsSimulating] = useState(false);
   const [isAutoSimulating, setIsAutoSimulating] = useState(false);
+  const [mapSource, setMapSource] = useState<'ai' | 'waze'>('waze');
 
   const fetchData = async () => {
     try {
@@ -167,36 +168,69 @@ export default function MobilityAdminPage() {
       </div>
 
       {/* Right Map Pane */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative min-h-[400px]">
-        {/* Top Controls Float */}
-        <div className="absolute top-4 left-4 z-10 flex flex-col gap-2 pointer-events-none">
-           {/* Legend Box */}
-           <div className="bg-white/90 backdrop-blur-md px-4 py-3 rounded-xl shadow-lg border border-slate-100 flex gap-4 text-xs font-bold text-slate-700 pointer-events-auto">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative min-h-[500px] flex flex-col">
+        {/* Top Controls Header */}
+        <div className="bg-slate-50 border-b border-slate-200 p-4 flex items-center justify-between shrink-0">
+           {/* Map Source Toggle */}
+           <div className="flex bg-slate-200 p-1 rounded-xl">
+             <button
+               onClick={() => setMapSource('waze')}
+               className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${mapSource === 'waze' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+             >
+               Waze Live Feed
+             </button>
+             <button
+               onClick={() => setMapSource('ai')}
+               className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${mapSource === 'ai' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+             >
+               AI Traffic Simulator (Local)
+             </button>
+           </div>
+
+           {/* AI Live Toggle Button */}
+           {mapSource === 'ai' && (
+             <div className="flex items-center gap-3">
+               {isAutoSimulating && (
+                 <div className="bg-rose-500/10 border border-rose-500/20 text-rose-600 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wider flex items-center gap-1.5 animate-pulse">
+                   <div className="h-1.5 w-1.5 bg-rose-500 rounded-full animate-ping" />
+                   AI FEED ACTIVE
+                 </div>
+               )}
+               <button 
+                 onClick={handleToggleAutoSimulate}
+                 className={`px-4 py-2 rounded-xl shadow-sm border text-xs font-bold flex items-center gap-2 transition-all active:scale-95
+                   ${isAutoSimulating 
+                     ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200' 
+                     : 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-800'
+                   }`}
+               >
+                 {isSimulating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className={`h-4 w-4 ${isAutoSimulating ? 'text-rose-600 animate-pulse' : ''}`} />}
+                 {isAutoSimulating ? "Stop AI Feed" : "Simulate AI Traffic"}
+               </button>
+             </div>
+           )}
+        </div>
+
+        {/* Legend Box for AI Map */}
+        {mapSource === 'ai' && (
+          <div className="absolute top-20 left-4 z-10 bg-white/90 backdrop-blur-md px-4 py-3 rounded-xl shadow-lg border border-slate-100 flex gap-4 text-xs font-bold text-slate-700 pointer-events-auto">
              <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)] animate-pulse" /> Heavy Traffic</div>
              <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]" /> Moderate</div>
              <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" /> Light / Fast</div>
-           </div>
-        </div>
+          </div>
+        )}
 
-        <div className="absolute top-4 right-4 z-10 pointer-events-auto flex flex-col items-end gap-2">
-           {isAutoSimulating && (
-             <div className="bg-rose-500/10 border border-rose-500/20 text-rose-600 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider flex items-center gap-1.5 animate-pulse backdrop-blur-sm shadow-sm">
-               <div className="h-1.5 w-1.5 bg-rose-500 rounded-full animate-ping" />
-               AI LIVE FEED ACTIVE
-             </div>
-           )}
-           <button 
-             onClick={handleToggleAutoSimulate}
-             className={`px-4 py-2.5 rounded-xl shadow-lg border text-xs font-bold flex items-center gap-2 transition-all active:scale-95
-               ${isAutoSimulating 
-                 ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200' 
-                 : 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-800'
-               }`}
-           >
-             {isSimulating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className={`h-4 w-4 ${isAutoSimulating ? 'text-rose-600 animate-pulse' : ''}`} />}
-             {isAutoSimulating ? "Stop AI Feed" : "Simulate AI Live Traffic"}
-           </button>
-        </div>
+        {/* MAP RENDERER */}
+        <div className="flex-1 relative">
+          {mapSource === 'waze' ? (
+             <iframe 
+                src="https://embed.waze.com/iframe?zoom=13&lat=14.6060&lon=121.0350&ct=livemap"
+                width="100%" 
+                height="100%" 
+                style={{ border: 0 }}
+                title="Waze Live Traffic Maps"
+             />
+          ) : (
 
         <Map 
           provider={mapTiler} 
@@ -250,6 +284,8 @@ export default function MobilityAdminPage() {
             </Overlay>
           ))}
         </Map>
+        )}
+        </div>
       </div>
       
     </div>
