@@ -27,7 +27,16 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS philhealth_id TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS voter_status TEXT DEFAULT 'unregistered' CHECK (voter_status IN ('registered', 'unregistered'));
 
 -- ============================================
--- 2. SEED THE DASHBOARD DATA
+-- 2. ENABLE READ ACCESS (RLS) FOR ADMIN API
+-- ============================================
+-- Since the Admin Portal uses a custom PIN instead of Supabase Auth,
+-- we must temporarily allow it to read the profiles table for the demo.
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON public.profiles;
+CREATE POLICY "Public profiles are viewable by everyone" ON public.profiles FOR SELECT USING (true);
+
+-- ============================================
+-- 3. SEED THE DASHBOARD DATA
 -- ============================================
 
 DO $$
