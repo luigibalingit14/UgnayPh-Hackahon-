@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
       { data: jobs },
       { data: agri }
     ] = await Promise.all([
-      supabase.from("profiles").select("id, full_name, username, citizen_id, city, barangay, contact, occupation").or(`full_name.ilike.${pattern},citizen_id.ilike.${pattern},city.ilike.${pattern},barangay.ilike.${pattern},contact.ilike.${pattern}`).limit(5),
+      supabase.from("profiles").select("id, full_name, username, citizen_id, city, barangay, contact, occupation, philhealth_id").or(`full_name.ilike.${pattern},citizen_id.ilike.${pattern},city.ilike.${pattern},barangay.ilike.${pattern},contact.ilike.${pattern},philhealth_id.ilike.${pattern}`).limit(5),
       supabase.from("mobility_reports").select("id, created_at, location, city, incident_type, description, is_resolved").ilike("description", pattern).limit(5),
       supabase.from("governance_complaints").select("id, created_at, title, description, category, status").or(`title.ilike.${pattern},description.ilike.${pattern}`).limit(5),
       supabase.from("health_appointments").select("id, created_at, concern, status").ilike("concern", pattern).limit(5),

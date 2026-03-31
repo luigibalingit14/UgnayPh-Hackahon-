@@ -106,15 +106,23 @@ export default function DashboardPage() {
         voter_status: profileForm.voter_status || null,
         citizen_id: profile?.citizen_id || (user?.id ? 'UPH-' + user.id.substring(0,4).toUpperCase() + '-' + user.id.substring(9,13).toUpperCase() : 'UPH-0000-0000'),
       };
-      const { error } = await supabase.from('profiles').update(updateData).eq('id', user.id);
-      if (error) {
-        console.error("Supabase Save Error:", error);
-        alert("Failed to save profile: " + error.message);
-        return; // Stop here if there's an error
+      let err: any = null;
+      for (let i = 0; i < 2; i++) {
+        const { error } = await supabase.from('profiles').update(updateData).eq('id', user.id);
+        err = error;
+        if (!error || !error.message?.includes('steal')) break;
+        await new Promise(r => setTimeout(r, 400));
+      }
+
+      if (err && !err.message?.includes('steal')) {
+        console.error("Supabase Save Error:", err);
+        alert("Failed to save profile: " + err.message);
+        return; // Stop here if there's a real error
       }
       
-      // If success
-      window.location.reload();
+      // If success, softly close and delay reload to prevent unhandled fetch AbortErrors from browser navigation
+      setIsEditingProfile(false);
+      setTimeout(() => window.location.reload(), 300);
     } catch (e) { 
       console.error(e);
       alert("An unexpected error occurred.");

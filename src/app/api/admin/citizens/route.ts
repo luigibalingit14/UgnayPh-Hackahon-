@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
     // Search citizens
     if (q && q.length >= 1) {
       const pattern = `%${q}%`;
-      query = query.or(`full_name.ilike.${pattern},citizen_id.ilike.${pattern},city.ilike.${pattern},barangay.ilike.${pattern},occupation.ilike.${pattern},contact.ilike.${pattern}`);
+      query = query.or(`full_name.ilike.${pattern},citizen_id.ilike.${pattern},city.ilike.${pattern},barangay.ilike.${pattern},occupation.ilike.${pattern},contact.ilike.${pattern},philhealth_id.ilike.${pattern}`);
     }
 
     // Limit to 50 for performance
