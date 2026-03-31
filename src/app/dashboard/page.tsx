@@ -91,6 +91,10 @@ export default function DashboardPage() {
 
   const handleProfileSave = async () => {
     if (!user) return;
+    if (!profileForm.full_name || !profileForm.age || !profileForm.address || !profileForm.contact || !profileForm.barangay || !profileForm.province) {
+      alert("Hindi pwede ang anonymous o kulang na profile! Pakikumpleto lahat ng required fields (*)");
+      return;
+    }
     try {
       const updateData: any = {
         full_name: profileForm.full_name || null,
@@ -231,6 +235,8 @@ export default function DashboardPage() {
   const avgScore = reports.length > 0 ? Math.round(reports.reduce((sum, r) => sum + r.score, 0) / reports.length) : 0;
   const legitChecks = reports.filter((r) => r.score <= 40).length;
 
+  const isProfileIncomplete = !profile?.full_name || !profile?.age || !profile?.address || !profile?.contact || !profile?.barangay || !profile?.province;
+
   const tabs = [
     { key: "vibecheck", label: "VibeCheck", icon: Shield, count: reports.length, color: "text-indigo-400" },
     { key: "mobility", label: "Mobility", icon: Car, count: mobility.length, color: "text-amber-400" },
@@ -301,12 +307,14 @@ export default function DashboardPage() {
 
               {/* Action Buttons */}
               <div className="flex flex-row md:flex-col gap-2 w-full md:w-auto mt-2 md:mt-0 shrink-0">
-                <Button onClick={() => setIsShowingQR(true)} variant="outline" className="flex-1 md:flex-none border-indigo-500/40 text-indigo-300 hover:text-white hover:bg-indigo-500/20 bg-indigo-500/10">
+                <Button disabled={isProfileIncomplete} onClick={() => setIsShowingQR(true)} variant="outline" className={`flex-1 md:flex-none ${isProfileIncomplete ? 'opacity-50 cursor-not-allowed border-white/10 text-white/30' : 'border-indigo-500/40 text-indigo-300 hover:text-white hover:bg-indigo-500/20 bg-indigo-500/10'}`}>
                   <QrCode className="h-4 w-4 mr-2" /> View Digital ID
                 </Button>
-                <Button onClick={() => setIsEditingProfile(!isEditingProfile)} variant="outline" className={`flex-1 md:flex-none border-white/10 text-white/60 hover:text-white hover:bg-white/10 ${isEditingProfile ? 'bg-white/10 text-white border-indigo-500/40' : 'bg-white/05'}`}>
-                  <Edit2 className="h-4 w-4 mr-2" /> {isEditingProfile ? 'Cancel' : 'Edit Profile'}
-                </Button>
+                {!isProfileIncomplete && (
+                  <Button onClick={() => setIsEditingProfile(!isEditingProfile)} variant="outline" className={`flex-1 md:flex-none border-white/10 text-white/60 hover:text-white hover:bg-white/10 ${isEditingProfile ? 'bg-white/10 text-white border-indigo-500/40' : 'bg-white/05'}`}>
+                    <Edit2 className="h-4 w-4 mr-2" /> {isEditingProfile ? 'Cancel' : 'Edit Profile'}
+                  </Button>
+                )}
                 <Button asChild className="btn-primary flex-1 md:flex-none py-2 px-5 shadow-lg shadow-indigo-500/20 border-0" style={{ background: "linear-gradient(135deg, #6366f1, #4f46e5)" }}>
                   <Link href="/">Check Feed</Link>
                 </Button>
@@ -317,19 +325,25 @@ export default function DashboardPage() {
             </div>
 
             {/* Citizen Details Grid */}
-            {isEditingProfile ? (
+            {isEditingProfile || isProfileIncomplete ? (
               <div className="border-t border-white/10 pt-5 mt-2">
-                <h3 className="text-sm font-bold text-white/70 uppercase tracking-wider mb-4 flex items-center gap-2"><Edit2 className="h-4 w-4 text-indigo-400" /> Edit Citizen Profile</h3>
+                {isProfileIncomplete && (
+                  <div className="mb-4 bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 flex items-start gap-3 animate-fade-in">
+                    <AlertTriangle className="h-5 w-5 text-rose-500 shrink-0" />
+                    <p className="text-xs text-rose-200"><strong>Anti-Cybercrime requirement:</strong> Bawal ang anonymous. Kailangan makumpleto muna ang iyong Citizen Profile para ma-activate at ma-verify ang iyong account. Ang optional lang ay PhilHealth at Trabaho.</p>
+                  </div>
+                )}
+                <h3 className="text-sm font-bold text-white/70 uppercase tracking-wider mb-4 flex items-center gap-2"><Edit2 className="h-4 w-4 text-indigo-400" /> {isProfileIncomplete ? 'Complete Citizen Profile' : 'Edit Citizen Profile'}</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <ProfileInput label="Full Name" value={profileForm.full_name} onChange={(v) => setProfileForm({...profileForm, full_name: v})} placeholder="Juan Dela Cruz" />
-                  <ProfileInput label="Age" value={profileForm.age} onChange={(v) => setProfileForm({...profileForm, age: v})} placeholder="25" type="number" />
-                  <ProfileSelect label="Sex" value={profileForm.sex} onChange={(v) => setProfileForm({...profileForm, sex: v})} options={[{v:"M",l:"Male"},{v:"F",l:"Female"}]} />
-                  <ProfileSelect label="Civil Status" value={profileForm.civil_status} onChange={(v) => setProfileForm({...profileForm, civil_status: v})} options={[{v:"Single",l:"Single"},{v:"Married",l:"Married"},{v:"Widowed",l:"Widowed"},{v:"Separated",l:"Separated"}]} />
-                  <ProfileInput label="Address" value={profileForm.address} onChange={(v) => setProfileForm({...profileForm, address: v})} placeholder="123 Rizal St." />
-                  <ProfileInput label="Barangay" value={profileForm.barangay} onChange={(v) => setProfileForm({...profileForm, barangay: v})} placeholder="Brgy. San Miguel" />
-                  <ProfileInput label="Province" value={profileForm.province} onChange={(v) => setProfileForm({...profileForm, province: v})} placeholder="Metro Manila" />
-                  <ProfileSelect label="Region" value={profileForm.region} onChange={(v) => setProfileForm({...profileForm, region: v})} options={[{v:"NCR",l:"NCR"},{v:"Region I",l:"Region I"},{v:"Region II",l:"Region II"},{v:"Region III",l:"Region III"},{v:"Region IV-A",l:"Region IV-A"},{v:"Region IV-B",l:"Region IV-B"},{v:"Region V",l:"Region V"},{v:"Region VI",l:"Region VI"},{v:"Region VII",l:"Region VII"},{v:"Region VIII",l:"Region VIII"},{v:"Region IX",l:"Region IX"},{v:"Region X",l:"Region X"},{v:"Region XI",l:"Region XI"},{v:"Region XII",l:"Region XII"},{v:"CAR",l:"CAR"},{v:"BARMM",l:"BARMM"},{v:"CARAGA",l:"CARAGA"}]} />
-                  <ProfileInput label="Contact No." value={profileForm.contact} onChange={(v) => setProfileForm({...profileForm, contact: v})} placeholder="0917-xxx-xxxx" />
+                  <ProfileInput label="Full Name *" value={profileForm.full_name} onChange={(v) => setProfileForm({...profileForm, full_name: v})} placeholder="Juan Dela Cruz" />
+                  <ProfileInput label="Age *" value={profileForm.age} onChange={(v) => setProfileForm({...profileForm, age: v})} placeholder="25" type="number" />
+                  <ProfileSelect label="Sex *" value={profileForm.sex} onChange={(v) => setProfileForm({...profileForm, sex: v})} options={[{v:"M",l:"Male"},{v:"F",l:"Female"}]} />
+                  <ProfileSelect label="Civil Status *" value={profileForm.civil_status} onChange={(v) => setProfileForm({...profileForm, civil_status: v})} options={[{v:"Single",l:"Single"},{v:"Married",l:"Married"},{v:"Widowed",l:"Widowed"},{v:"Separated",l:"Separated"}]} />
+                  <ProfileInput label="Address *" value={profileForm.address} onChange={(v) => setProfileForm({...profileForm, address: v})} placeholder="123 Rizal St." />
+                  <ProfileInput label="Barangay *" value={profileForm.barangay} onChange={(v) => setProfileForm({...profileForm, barangay: v})} placeholder="Brgy. San Miguel" />
+                  <ProfileInput label="Province *" value={profileForm.province} onChange={(v) => setProfileForm({...profileForm, province: v})} placeholder="Metro Manila" />
+                  <ProfileSelect label="Region *" value={profileForm.region} onChange={(v) => setProfileForm({...profileForm, region: v})} options={[{v:"NCR",l:"NCR"},{v:"Region I",l:"Region I"},{v:"Region II",l:"Region II"},{v:"Region III",l:"Region III"},{v:"Region IV-A",l:"Region IV-A"},{v:"Region IV-B",l:"Region IV-B"},{v:"Region V",l:"Region V"},{v:"Region VI",l:"Region VI"},{v:"Region VII",l:"Region VII"},{v:"Region VIII",l:"Region VIII"},{v:"Region IX",l:"Region IX"},{v:"Region X",l:"Region X"},{v:"Region XI",l:"Region XI"},{v:"Region XII",l:"Region XII"},{v:"CAR",l:"CAR"},{v:"BARMM",l:"BARMM"},{v:"CARAGA",l:"CARAGA"}]} />
+                  <ProfileInput label="Contact No. *" value={profileForm.contact} onChange={(v) => setProfileForm({...profileForm, contact: v})} placeholder="0917-xxx-xxxx" />
                   <ProfileInput label="Occupation" value={profileForm.occupation} onChange={(v) => setProfileForm({...profileForm, occupation: v})} placeholder="Teacher" />
                   <ProfileInput label="PhilHealth ID" value={profileForm.philhealth_id} onChange={(v) => setProfileForm({...profileForm, philhealth_id: v})} placeholder="PH-01-XXXXXXXXX-X" />
                   <ProfileSelect label="Voter Status" value={profileForm.voter_status} onChange={(v) => setProfileForm({...profileForm, voter_status: v})} options={[{v:"registered",l:"Registered"},{v:"unregistered",l:"Unregistered"}]} />
@@ -360,9 +374,11 @@ export default function DashboardPage() {
         </div>
 
         {/* Universal Tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-4 mb-4 scrollbar-hide">
-          {tabs.map(t => (
-            <button
+        {!isProfileIncomplete ? (
+          <>
+            <div className="flex gap-2 overflow-x-auto pb-4 mb-4 scrollbar-hide">
+              {tabs.map(t => (
+                <button
               key={t.key}
               onClick={() => setActiveTab(t.key as any)}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap shrink-0 border ${
@@ -611,7 +627,17 @@ export default function DashboardPage() {
             </div>
           )}
 
-        </div>
+            </div>
+          </>
+        ) : (
+          <div className="glass-card p-12 text-center min-h-[400px] flex flex-col items-center justify-center border-dashed border-rose-500/30 bg-rose-500/05 mt-4">
+            <ShieldAlert className="h-16 w-16 text-rose-500/50 mb-6 animate-pulse" />
+            <h3 className="text-2xl font-bold text-white mb-2 font-display">Unverified Account Level 1</h3>
+            <p className="text-white/60 text-sm max-w-md mx-auto">
+              Please complete all required fields (*) in your Citizen Profile above to unlock the Universal Citizen Ecosystem. Bawal ang anonymous sa Bayanihan Super App.
+            </p>
+          </div>
+        )}
         {/* QR Code Modal for Mobile / Show to Officer */}
         {isShowingQR && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
