@@ -12,7 +12,7 @@ import { formatDate, truncateText, getVibeLabel, cn } from "@/lib/utils";
 import {
   Flame, FileText, Trophy, Loader2, Shield, LogIn, User, Edit2, Check, X,
   Car, ShieldCheck, Briefcase, Heart, Leaf, MapPin, Building2, TrendingUp, Calendar, AlertTriangle, ThumbsUp, HelpCircle, ShieldAlert,
-  Phone, Mail, Vote, IdCard, Save
+  Phone, Mail, Vote, IdCard, Save, QrCode
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -28,6 +28,7 @@ export default function DashboardPage() {
   // Profile Edit States
   const [isEditingCity, setIsEditingCity] = useState(false);
   const [selectedCity, setSelectedCity] = useState("Manila");
+  const [isShowingQR, setIsShowingQR] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({
     full_name: "",
@@ -300,6 +301,9 @@ export default function DashboardPage() {
 
               {/* Action Buttons */}
               <div className="flex flex-row md:flex-col gap-2 w-full md:w-auto mt-2 md:mt-0 shrink-0">
+                <Button onClick={() => setIsShowingQR(true)} variant="outline" className="flex-1 md:flex-none border-indigo-500/40 text-indigo-300 hover:text-white hover:bg-indigo-500/20 bg-indigo-500/10">
+                  <QrCode className="h-4 w-4 mr-2" /> View Digital ID
+                </Button>
                 <Button onClick={() => setIsEditingProfile(!isEditingProfile)} variant="outline" className={`flex-1 md:flex-none border-white/10 text-white/60 hover:text-white hover:bg-white/10 ${isEditingProfile ? 'bg-white/10 text-white border-indigo-500/40' : 'bg-white/05'}`}>
                   <Edit2 className="h-4 w-4 mr-2" /> {isEditingProfile ? 'Cancel' : 'Edit Profile'}
                 </Button>
@@ -608,6 +612,36 @@ export default function DashboardPage() {
           )}
 
         </div>
+        {/* QR Code Modal for Mobile / Show to Officer */}
+        {isShowingQR && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+             <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-[0_0_50px_rgba(99,102,241,0.2)] relative text-center pointer-events-auto border border-white/20 animate-fade-in">
+               <button onClick={() => setIsShowingQR(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-800 bg-slate-100 rounded-full p-1"><X className="h-5 w-5" /></button>
+               
+               <div className="flex justify-center mb-3">
+                 <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full p-2.5 shadow-lg">
+                    <ShieldCheck className="h-6 w-6 text-white" />
+                 </div>
+               </div>
+               <h3 className="text-xl font-black text-slate-800 mb-1 tracking-tight">eGovPH Digital ID</h3>
+               <p className="text-[11px] font-semibold text-slate-400 mb-6 px-4 leading-relaxed">Ipakita ang secure QR code na ito sa mga awtoridad o LGU desk officers para ma-scan.</p>
+               
+               <div className="mx-auto bg-slate-50 p-4 rounded-2xl w-fit mb-6 border-2 border-slate-100 shadow-inner">
+                 <img 
+                   src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin + "/verify/" + getCitizenId() : "")}&bgcolor=ffffff&color=2e1065&margin=0`} 
+                   alt="Citizen QR Code" 
+                   width={200} height={200}
+                   className="rounded-xl w-[200px] h-[200px] mx-auto opacity-90"
+                 />
+               </div>
+               
+               <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  <p className="text-[9px] font-black tracking-widest text-slate-400 mb-1 uppercase">UgnayPH Citizen ID</p>
+                  <p className="text-lg font-mono font-black text-indigo-900 tracking-wider bg-slate-200/50 py-1 rounded inline-block px-3">{getCitizenId()}</p>
+               </div>
+             </div>
+          </div>
+        )}
       </div>
   );
 }
