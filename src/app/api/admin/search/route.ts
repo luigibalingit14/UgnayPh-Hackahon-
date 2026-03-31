@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 // Connected directly to Supabase profiles now
+export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {

@@ -21,6 +21,8 @@ function getMapCoordinates(profile: any) {
   return { lat, lng };
 }
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -51,8 +53,8 @@ export async function GET(req: NextRequest) {
       query = query.or(`full_name.ilike.${pattern},citizen_id.ilike.${pattern},city.ilike.${pattern},barangay.ilike.${pattern},occupation.ilike.${pattern},contact.ilike.${pattern},philhealth_id.ilike.${pattern}`);
     }
 
-    // Limit to 50 for performance
-    const { data: citizens, error } = await query.limit(50);
+    // Sort newest updated/created first and limit to 50 for performance
+    const { data: citizens, error } = await query.order('id', { ascending: false }).limit(50);
     
     if (error) throw error;
     

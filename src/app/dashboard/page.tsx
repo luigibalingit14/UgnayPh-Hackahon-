@@ -108,7 +108,7 @@ export default function DashboardPage() {
       };
       let err: any = null;
       for (let i = 0; i < 2; i++) {
-        const { error } = await supabase.from('profiles').update(updateData).eq('id', user.id);
+        const { error } = await supabase.from('profiles').upsert({ id: user.id, ...updateData });
         err = error;
         if (!error || !error.message?.includes('steal')) break;
         await new Promise(r => setTimeout(r, 400));
