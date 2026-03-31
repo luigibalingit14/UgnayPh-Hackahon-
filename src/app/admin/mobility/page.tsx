@@ -37,6 +37,7 @@ export default function MobilityAdminPage() {
   const [trafficNodes, setTrafficNodes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSimulating, setIsSimulating] = useState(false);
+  const [isAutoSimulating, setIsAutoSimulating] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -64,24 +65,37 @@ export default function MobilityAdminPage() {
 
   useEffect(() => {
     fetchData();
-    // Auto-poll traffic nodes every 10 seconds for real-time demo feel
-    const interval = setInterval(() => {
-        fetch("/api/admin/traffic")
-          .then(r => r.json())
-          .then(res => { if(res.success) setTrafficNodes(res.data); })
-          .catch(console.error);
+    // Background polling for normal state
+    const fetchInterval = setInterval(() => {
+        if (!isAutoSimulating) {
+           fetch("/api/admin/traffic").then(r => r.json()).then(res => { if(res.success) setTrafficNodes(res.data); }).catch(() => {});
+        }
     }, 10000);
-    return () => clearInterval(interval);
-  }, []);
+    return () => clearInterval(fetchInterval);
+  }, [isAutoSimulating]);
 
-  const handleSimulate = async () => {
-    setIsSimulating(true);
-    try {
-      await fetch('/api/admin/traffic/simulate', { method: "POST" });
-      await fetchData(); // refresh UI immediately
-    } finally {
-      setIsSimulating(false);
+  // The Magic Hackathon Auto-Simulator Frame Loop
+  useEffect(() => {
+    let simInterval: NodeJS.Timeout;
+    if (isAutoSimulating) {
+      simInterval = setInterval(async () => {
+         try {
+           setIsSimulating(true);
+           const p1 = fetch('/api/admin/traffic/simulate', { method: "POST" });
+           const p2 = fetch("/api/admin/traffic").then(r => r.json());
+           await p1;
+           const newTraffic = await p2;
+           if(newTraffic.success) setTrafficNodes(newTraffic.data);
+         } catch(e) {} finally {
+           setIsSimulating(false);
+         }
+      }, 3000); // Pulse every 3 seconds!
     }
+    return () => clearInterval(simInterval);
+  }, [isAutoSimulating]);
+
+  const handleToggleAutoSimulate = () => {
+    setIsAutoSimulating(!isAutoSimulating);
   };
 
   const handleToggleResolve = async (id: string, currentStatus: boolean) => {
@@ -164,14 +178,23 @@ export default function MobilityAdminPage() {
            </div>
         </div>
 
-        <div className="absolute top-4 right-4 z-10 pointer-events-auto">
+        <div className="absolute top-4 right-4 z-10 pointer-events-auto flex flex-col items-end gap-2">
+           {isAutoSimulating && (
+             <div className="bg-rose-500/10 border border-rose-500/20 text-rose-600 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider flex items-center gap-1.5 animate-pulse backdrop-blur-sm shadow-sm">
+               <div className="h-1.5 w-1.5 bg-rose-500 rounded-full animate-ping" />
+               AI LIVE FEED ACTIVE
+             </div>
+           )}
            <button 
-             onClick={handleSimulate}
-             disabled={isSimulating}
-             className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl shadow-lg border border-indigo-800 text-xs font-bold flex items-center gap-2 transition-all transition-transform active:scale-95 disabled:opacity-50"
+             onClick={handleToggleAutoSimulate}
+             className={`px-4 py-2.5 rounded-xl shadow-lg border text-xs font-bold flex items-center gap-2 transition-all active:scale-95
+               ${isAutoSimulating 
+                 ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200' 
+                 : 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-800'
+               }`}
            >
-             {isSimulating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4" />}
-             Simulate Live Traffic
+             {isSimulating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className={`h-4 w-4 ${isAutoSimulating ? 'text-rose-600 animate-pulse' : ''}`} />}
+             {isAutoSimulating ? "Stop AI Feed" : "Simulate AI Live Traffic"}
            </button>
         </div>
 
