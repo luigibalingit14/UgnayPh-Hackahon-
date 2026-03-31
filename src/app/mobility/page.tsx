@@ -41,6 +41,12 @@ export default function MobilityPage() {
   const [aiSuggestion, setAiSuggestion] = useState("");
   const [form, setForm] = useState({ location: "", city: "Manila", incident_type: "traffic_jam", severity: "medium" as "low"|"medium"|"high", description: "" });
   const [successMsg, setSuccessMsg] = useState("");
+  
+  // DRIVING MODE STATES
+  const [isDriving, setIsDriving] = useState(false);
+  const [mySpeed, setMySpeed] = useState<number | null>(null);
+  const [drivingError, setDrivingError] = useState("");
+  const watchId = useRef<number | null>(null);
 
   const fetchReports = useCallback(async () => {
     setLoading(true);
@@ -111,6 +117,65 @@ export default function MobilityPage() {
     await fetch("/api/mobility", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ upvote: true, report_id: id }) });
     fetchReports();
   };
+
+  // ----- DRIVE MODE LOGIC -----
+  const startDriving = () => {
+    if (!navigator.geolocation) {
+      setDrivingError("Geolocation not supported");
+      return;
+    }
+    setDrivingError("");
+    setIsDriving(true);
+    setMySpeed(0);
+
+    watchId.current = navigator.geolocation.watchPosition(
+      async (pos) => {
+        // Speed in m/s. Convert to km/h. If null, mock to 15 (hackathon trick if stationary)
+        let kph = (pos.coords.speed || 0) * 3.6;
+        if (kph < 2 && pos.coords.accuracy < 100) kph = 0; 
+        
+        setMySpeed(Math.round(kph));
+
+        // Submit to API if moving
+        if (kph > 0) {
+           fetch("/api/traffic/ping", {
+             method: "POST",
+             headers: { "Content-Type": "application/json" },
+             body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, speed: kph })
+           }).catch(() => {});
+        }
+      },
+      (err) => {
+        setDrivingError(err.message);
+        setIsDriving(false);
+      },
+      { enableHighAccuracy: true, maximumAge: 5000 }
+    );
+  };
+
+  const stopDriving = () => {
+    if (watchId.current) navigator.geolocation.clearWatch(watchId.current);
+    setIsDriving(false);
+    setMySpeed(null);
+  };
+
+  // The Magic Hackathon Button (Mocks sending 10 km/h to simulate heavy traffic on the real API)
+  const sendMockTrafficJam = async () => {
+     try {
+       // Sends a heavy traffic ping near EDSA Cubao
+       await fetch("/api/traffic/ping", {
+         method: "POST",
+         headers: { "Content-Type": "application/json" },
+         body: JSON.stringify({ lat: 14.6186, lng: 121.0526, speed: 12 })
+       });
+       setSuccessMsg("Sent a Mock 12 km/h signal to Admin!");
+       setTimeout(() => setSuccessMsg(""), 3000);
+     } catch (e) {}
+  };
+
+  useEffect(() => {
+    return () => { if (watchId.current) navigator.geolocation.clearWatch(watchId.current); };
+  }, []);
 
   const severityBadge = (s: string) => {
     if (s === "low") return <span className="badge-low text-xs px-2 py-0.5 rounded-full font-medium">● Low</span>;
@@ -196,6 +261,48 @@ export default function MobilityPage() {
                   {aiSuggestion}
                 </div>
               )}
+            </div>
+
+            {/* Drive Mode Tracker */}
+            <div className="glass-card p-5 space-y-3 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <h3 className="font-semibold text-white flex items-center justify-between">
+                 <div className="flex items-center gap-2">
+                   <Car className="h-4 w-4 text-emerald-400" /> Share Drive Route
+                 </div>
+                 {isDriving && <span className="flex h-2 w-2 relative"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span>}
+              </h3>
+              
+              <p className="text-[11px] text-white/40 leading-relaxed font-medium">Bukas mo ito while driving for anonymous speed sharing to the LGU Command Center map.</p>
+              
+              {drivingError && <p className="text-[10px] text-rose-400">{drivingError}</p>}
+              
+              <div className="pt-2 flex flex-col gap-2">
+                 <button 
+                   onClick={isDriving ? stopDriving : startDriving}
+                   className={`w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-sm
+                    ${isDriving 
+                      ? "bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30"
+                      : "bg-white border border-slate-200 text-slate-800 hover:bg-slate-50"
+                    }`}
+                 >
+                   {isDriving ? "Stop Driving Mode" : "Start Driving Mode"}
+                 </button>
+
+                 {isDriving && (
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 flex justify-between items-center w-full mt-1">
+                       <span className="text-[10px] font-bold text-emerald-300 tracking-wider">SPEED</span>
+                       <span className="font-black text-xl text-white">{mySpeed || 0} <span className="text-xs text-white/50 font-semibold">km/h</span></span>
+                    </div>
+                 )}
+                 
+                 {/* HACKATHON SECRET DEMO BUTTON */}
+                 {isDriving && (
+                    <button onClick={sendMockTrafficJam} title="Use this if your laptop doesn't move!" className="w-full text-[10px] py-1 text-slate-500 hover:text-amber-400 font-medium transition-colors border border-dashed border-slate-700/50 rounded-lg mt-1">
+                      [Demo] Fire 'Traffic Jam' GPS ping
+                    </button>
+                 )}
+              </div>
             </div>
           </div>
 
