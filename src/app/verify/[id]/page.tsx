@@ -53,8 +53,12 @@ export default async function VerifyCitizenPage({ params }: { params: Promise<{ 
            
            <div className="flex flex-col items-center mb-6">
               <div className="w-24 h-24 rounded-2xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center mb-4 shadow-sm relative overflow-hidden">
-                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/micro-carbon.png')] opacity-10" />
-                 <User className="h-10 w-10 text-slate-300 relative z-10" />
+                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/micro-carbon.png')] opacity-10 z-0" />
+                 {profile.avatar_url ? (
+                   <img src={profile.avatar_url as string} alt="Profile" className="w-full h-full object-cover relative z-10" />
+                 ) : (
+                   <User className="h-10 w-10 text-slate-300 relative z-10" />
+                 )}
               </div>
               <h2 className="text-2xl font-black text-slate-800 text-center leading-tight mb-1">{profile.full_name || profile.username || "Unnamed Citizen"}</h2>
               <p className="text-sm font-semibold text-slate-500 mb-3">{profile.city || profile.region || "Philippines"}</p>
