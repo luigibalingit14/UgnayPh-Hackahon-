@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -26,8 +26,13 @@ const modules = [
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [modulesOpen, setModulesOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const { user, profile, signOut, loading } = useAuth();
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   const headerRef = useRef<HTMLElement>(null);
   useGSAP(() => {
@@ -39,7 +44,18 @@ export function Header() {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between gap-4">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 shrink-0 group">
+          <Link 
+            href="/" 
+            onClick={(e) => { 
+              e.preventDefault(); 
+              if (window.location.pathname === "/") {
+                window.location.reload();
+              } else {
+                window.location.href = "/";
+              }
+            }} 
+            className="flex items-center gap-3 shrink-0 group"
+          >
             <div className="relative shrink-0 flex items-center justify-center">
               <UgnayLogo className="w-10 h-10 group-hover:scale-105 transition-transform duration-300 drop-shadow-md" />
             </div>
@@ -109,8 +125,8 @@ export function Header() {
           </nav>
 
           {/* Right Section */}
-          <div className="flex items-center gap-2 shrink-0">
-            {!loading && (
+          <div className="flex items-center gap-2 shrink-0 min-h-[40px]">
+            {mounted && !loading && (
               user ? (
                 <div className="hidden md:flex items-center gap-2">
                   <Link
@@ -175,7 +191,7 @@ export function Header() {
 
             <hr className="glass-divider my-2" />
 
-            {user ? (
+            {mounted && !loading && (user ? (
               <>
                 <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/05 transition-all">
                   <User className="h-5 w-5 text-indigo-400" />
@@ -195,7 +211,7 @@ export function Header() {
                   Sign Up
                 </Link>
               </div>
-            )}
+            ))}
           </div>
         </div>
       </div>
