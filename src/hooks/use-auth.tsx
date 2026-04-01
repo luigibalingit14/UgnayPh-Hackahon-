@@ -79,15 +79,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = async () => {
+    // Instant UI reaction for perceived performance
+    setUser(null);
+    setProfile(null);
+    
     try {
-      await supabase.auth.signOut();
+      // Fire and forget network call. Supabase clears local storage synchronously.
+      supabase.auth.signOut().catch(console.error);
     } catch (error) {
       console.error("Sign out error:", error);
-    } finally {
-      setUser(null);
-      setProfile(null);
-      window.location.href = "/";
-    }
+    } 
+    
+    // Navigate instantly
+    window.location.href = "/";
   };
 
   return (
