@@ -47,11 +47,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
+      // Use getSession for immediate local cache hit instead of network-bound getUser
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
 
-      if (user) {
-        await fetchProfile(user.id);
+      if (session?.user) {
+        await fetchProfile(session.user.id);
       }
 
       setLoading(false);
@@ -77,6 +78,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       subscription.unsubscribe();
     };
   }, []);
+
+  // Auto-refresh profile on window focus to keep multiple devices in sync
+  useEffect(() => {
+    if (!user) return;
+    const onFocus = () => {
+      if (document.visibilityState === "visible") {
+         refreshProfile().catch(console.error);
+      }
+    };
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("visibilitychange", onFocus);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [user]);
 
   const signOut = async () => {
     // Instant UI reaction for perceived performance
