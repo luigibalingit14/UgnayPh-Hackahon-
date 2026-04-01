@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import Cropper from "react-easy-crop";
 
 export default function DashboardPage() {
   const { user, profile, loading: authLoading, signOut } = useAuth();
@@ -45,6 +46,12 @@ export default function DashboardPage() {
     voter_status: "unregistered",
     avatar_url: "",
   });
+
+  // Cropper States
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
 
   // States for all modules
   const [reports, setReports] = useState<Report[]>([]);
@@ -153,7 +160,10 @@ export default function DashboardPage() {
       }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setProfileForm(prev => ({ ...prev, avatar_url: reader.result as string }));
+        setImageToCrop(reader.result as string);
+        // Reset cropper controls
+        setCrop({ x: 0, y: 0 });
+        setZoom(1);
       };
       reader.readAsDataURL(file);
     }
@@ -667,6 +677,79 @@ export default function DashboardPage() {
             </p>
           </div>
         )}
+
+        {/* Crop Modal */}
+        {imageToCrop && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+            <div className="bg-slate-900 rounded-3xl w-full max-w-md shadow-2xl relative flex flex-col overflow-hidden border border-white/10 animate-fade-in">
+              <div className="p-4 border-b border-white/10 flex justify-between items-center bg-slate-800">
+                <h3 className="text-white font-semibold">Ayusin ang Larawan</h3>
+                <button onClick={() => setImageToCrop(null)} className="text-white/50 hover:text-white"><X className="h-5 w-5" /></button>
+              </div>
+              <div className="relative w-full h-[400px] bg-black">
+                <Cropper
+                  image={imageToCrop}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  cropShape="round"
+                  showGrid={false}
+                  onCropChange={setCrop}
+                  onZoomChange={setZoom}
+                  onCropComplete={(_, croppedPixels) => setCroppedAreaPixels(croppedPixels)}
+                />
+              </div>
+              <div className="p-5 space-y-6 bg-slate-800">
+                <div className="flex items-center gap-4">
+                  <span className="text-xs text-white/50 font-bold tracking-widest uppercase">Zoom</span>
+                  <input
+                    type="range"
+                    min={1}
+                    max={3}
+                    step={0.1}
+                    value={zoom}
+                    onChange={(e) => setZoom(Number(e.target.value))}
+                    className="w-full accent-indigo-500"
+                  />
+                  <span className="text-xs text-indigo-400 font-bold">{Math.round(zoom * 100)}%</span>
+                </div>
+                <div className="flex gap-3">
+                  <Button variant="outline" className="flex-1 bg-white/05 border border-white/10 text-white/70 hover:text-white" onClick={() => setImageToCrop(null)}>
+                    Kanselahin
+                  </Button>
+                  <Button className="flex-1 btn-primary border-0 bg-indigo-600 hover:bg-indigo-700 text-white" onClick={async () => {
+                    if (croppedAreaPixels) {
+                      const getCroppedImg = async (imageSrc: string, pixelCrop: any) => {
+                        const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+                          const img = new Image();
+                          img.onload = () => resolve(img);
+                          img.onerror = (error) => reject(error);
+                          img.src = imageSrc;
+                        });
+                        const canvas = document.createElement("canvas");
+                        const ctx = canvas.getContext("2d");
+                        if (!ctx) return null;
+                        canvas.width = pixelCrop.width;
+                        canvas.height = pixelCrop.height;
+                        ctx.drawImage(image, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, pixelCrop.width, pixelCrop.height);
+                        return canvas.toDataURL("image/jpeg");
+                      };
+                      
+                      const croppedImage = await getCroppedImg(imageToCrop, croppedAreaPixels);
+                      if (croppedImage) {
+                        setProfileForm(prev => ({ ...prev, avatar_url: croppedImage }));
+                        setImageToCrop(null);
+                      }
+                    }
+                  }}>
+                    I-Crop
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* QR Code Modal for Mobile / Show to Officer */}
         {isShowingQR && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
