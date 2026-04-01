@@ -26,6 +26,7 @@ interface Citizen {
   occupation: string;
   philhealth_id: string;
   voter_status: "registered" | "unregistered";
+  avatar_url?: string;
   lat: number;
   lng: number;
   created_at: string;
@@ -145,9 +146,15 @@ export default function CitizenRecordsPage() {
                   onClick={() => handleSelectCitizen(citizen)}
                   className={`w-full text-left p-4 hover:bg-slate-800/50 transition-all flex items-center gap-3 group ${selectedCitizen?.id === citizen.id ? "bg-slate-800 border-l-4 border-blue-500" : "border-l-4 border-transparent"}`}
                 >
-                  <div className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${selectedCitizen?.id === citizen.id ? "bg-blue-600 shadow-lg shadow-blue-500/30 text-white" : "bg-slate-800 border border-slate-700 text-slate-400 group-hover:bg-slate-700 group-hover:text-blue-400"} transition-all`}>
-                    {citizen.full_name.split(" ").map(n => n[0]).slice(0, 2).join("")}
-                  </div>
+                  {citizen.avatar_url ? (
+                    <div className={`h-10 w-10 rounded-full shrink-0 flex items-center justify-center overflow-hidden border ${selectedCitizen?.id === citizen.id ? "border-blue-500 shadow-lg shadow-blue-500/30" : "border-slate-700"}`}>
+                      <img src={citizen.avatar_url} alt={citizen.full_name} className="w-full h-full object-cover" />
+                    </div>
+                  ) : (
+                    <div className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${selectedCitizen?.id === citizen.id ? "bg-blue-600 shadow-lg shadow-blue-500/30 text-white" : "bg-slate-800 border border-slate-700 text-slate-400 group-hover:bg-slate-700 group-hover:text-blue-400"} transition-all`}>
+                      {citizen.full_name.split(" ").map(n => n[0]).slice(0, 2).join("")}
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-slate-200 truncate">{citizen.full_name}</p>
                     <p className="text-[11px] text-slate-500 font-mono truncate">{citizen.citizen_id}</p>
@@ -176,9 +183,15 @@ export default function CitizenRecordsPage() {
           <div className="bg-slate-900 rounded-2xl shadow-[0_0_40px_-15px_rgba(0,0,0,0.5)] border border-slate-800 p-5 shrink-0 animate-in fade-in slide-in-from-top-2 duration-200">
             <div className="flex justify-between items-start mb-4">
               <div className="flex items-center gap-4">
-                <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 border border-blue-400/20 flex items-center justify-center text-white text-lg font-bold shadow-lg shadow-blue-500/20">
-                  {selectedCitizen.full_name.split(" ").map(n => n[0]).slice(0, 2).join("")}
-                </div>
+                {selectedCitizen.avatar_url ? (
+                  <div className="h-14 w-14 rounded-xl flex items-center justify-center overflow-hidden shadow-lg shadow-blue-500/20 border border-blue-400/20">
+                    <img src={selectedCitizen.avatar_url} alt={selectedCitizen.full_name} className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 border border-blue-400/20 flex items-center justify-center text-white text-lg font-bold shadow-lg shadow-blue-500/20">
+                    {selectedCitizen.full_name.split(" ").map(n => n[0]).slice(0, 2).join("")}
+                  </div>
+                )}
                 <div>
                   <h3 className="text-lg font-bold text-white">{selectedCitizen.full_name}</h3>
                   <div className="flex items-center gap-2 mt-0.5">

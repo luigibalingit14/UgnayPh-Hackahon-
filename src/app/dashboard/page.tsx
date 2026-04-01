@@ -43,6 +43,7 @@ export default function DashboardPage() {
     occupation: "",
     philhealth_id: "",
     voter_status: "unregistered",
+    avatar_url: "",
   });
 
   // States for all modules
@@ -74,6 +75,7 @@ export default function DashboardPage() {
         occupation: profile.occupation || "",
         philhealth_id: profile.philhealth_id || "",
         voter_status: profile.voter_status || "unregistered",
+        avatar_url: profile.avatar_url || "",
       });
     }
   }, [user, authLoading, profile]);
@@ -109,6 +111,7 @@ export default function DashboardPage() {
         occupation: profileForm.occupation || null,
         philhealth_id: profileForm.philhealth_id || null,
         voter_status: profileForm.voter_status || null,
+        avatar_url: profileForm.avatar_url || null,
         citizen_id: profile?.citizen_id || (user?.id ? 'UPH-' + user.id.substring(0,4).toUpperCase() + '-' + user.id.substring(9,13).toUpperCase() : 'UPH-0000-0000'),
       };
       let err: any = null;
@@ -139,6 +142,21 @@ export default function DashboardPage() {
     if (profile?.citizen_id) return profile.citizen_id;
     if (!user?.id) return 'UPH-0000-0000';
     return 'UPH-' + user.id.substring(0,4).toUpperCase() + '-' + user.id.substring(9,13).toUpperCase();
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert("Pakiusap, pumili ng larawan na mas maliit sa 2MB.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileForm(prev => ({ ...prev, avatar_url: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   useEffect(() => {
@@ -259,9 +277,20 @@ export default function DashboardPage() {
             {/* Top row: Avatar + Name + Actions */}
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6 w-full mb-6">
               {/* Avatar / Photo area */}
-              <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-indigo-500/30 to-purple-500/30 border border-white/20 flex items-center justify-center shrink-0 shadow-inner relative overflow-hidden">
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/micro-carbon.png')] opacity-20" />
-                <User className="h-9 w-9 text-white/80 relative z-10" />
+              <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-indigo-500/30 to-purple-500/30 border border-white/20 flex items-center justify-center shrink-0 shadow-inner relative overflow-hidden group">
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/micro-carbon.png')] opacity-20 z-0" />
+                {(isEditingProfile ? profileForm.avatar_url : profile?.avatar_url) ? (
+                  <img src={(isEditingProfile ? profileForm.avatar_url : profile?.avatar_url) as string} alt="Profile" className="w-full h-full object-cover relative z-10" />
+                ) : (
+                  <User className="h-9 w-9 text-white/80 relative z-10" />
+                )}
+                {isEditingProfile && (
+                  <label className="absolute inset-0 bg-black/50 z-20 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                    <Edit2 className="h-4 w-4 text-white mb-1" />
+                    <span className="text-[10px] text-white/90 font-semibold tracking-wider">Upload</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                  </label>
+                )}
               </div>
               
               <div className="text-center md:text-left flex-1">
