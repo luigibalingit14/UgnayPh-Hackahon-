@@ -28,14 +28,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
 
   const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
-
-    if (data) {
-      setProfile(data as Profile);
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
+        
+      if (error) console.error("Profile fetch error:", error);
+      if (data) {
+        setProfile(data as Profile);
+      }
+    } catch (err) {
+      console.error("Unexpected error fetching profile:", err);
     }
   };
 
@@ -47,15 +52,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const getUser = async () => {
-      // Use getSession for immediate local cache hit instead of network-bound getUser
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
+      try {
+        // Use getSession for immediate local cache hit instead of network-bound getUser
+        const { data: { session } } = await supabase.auth.getSession();
+        setUser(session?.user ?? null);
 
-      if (session?.user) {
-        await fetchProfile(session.user.id);
+        // Turn off loading auth state instantly so UI buttons show up
+        setLoading(false);
+
+        if (session?.user) {
+          // Fetch profile in the background without blocking the auth UI
+          await fetchProfile(session.user.id);
+        }
+      } catch (err) {
+        console.error("Auth init error:", err);
+        setLoading(false);
       }
-
-      setLoading(false);
     };
 
     getUser();
