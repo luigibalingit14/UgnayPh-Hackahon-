@@ -680,13 +680,13 @@ export default function DashboardPage() {
 
         {/* Crop Modal */}
         {imageToCrop && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-            <div className="bg-slate-900 rounded-3xl w-full max-w-md shadow-2xl relative flex flex-col overflow-hidden border border-white/10 animate-fade-in">
-              <div className="p-4 border-b border-white/10 flex justify-between items-center bg-slate-800">
-                <h3 className="text-white font-semibold">Ayusin ang Larawan</h3>
-                <button onClick={() => setImageToCrop(null)} className="text-white/50 hover:text-white"><X className="h-5 w-5" /></button>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/90 backdrop-blur-md">
+            <div className="bg-slate-900 rounded-3xl w-full max-w-md shadow-2xl relative flex flex-col overflow-hidden border border-white/10 animate-fade-in max-h-[90vh]">
+              <div className="p-3 sm:p-4 border-b border-white/10 flex justify-between items-center bg-slate-800 shrink-0">
+                <h3 className="text-white font-semibold text-sm sm:text-base">Ayusin ang Larawan</h3>
+                <button onClick={() => setImageToCrop(null)} className="text-white/50 hover:text-white p-1"><X className="h-5 w-5" /></button>
               </div>
-              <div className="relative w-full h-[400px] bg-black">
+              <div className="relative w-full aspect-square min-h-[250px] max-h-[50vh] bg-black shrink-0">
                 <Cropper
                   image={imageToCrop}
                   crop={crop}
@@ -699,9 +699,9 @@ export default function DashboardPage() {
                   onCropComplete={(_, croppedPixels) => setCroppedAreaPixels(croppedPixels)}
                 />
               </div>
-              <div className="p-5 space-y-6 bg-slate-800">
-                <div className="flex items-center gap-4">
-                  <span className="text-xs text-white/50 font-bold tracking-widest uppercase">Zoom</span>
+              <div className="p-4 sm:p-5 space-y-4 sm:space-y-6 bg-slate-800 shrink-0 overflow-y-auto">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <span className="text-[10px] sm:text-xs text-white/50 font-bold tracking-widest uppercase">Zoom</span>
                   <input
                     type="range"
                     min={1}
@@ -711,13 +711,13 @@ export default function DashboardPage() {
                     onChange={(e) => setZoom(Number(e.target.value))}
                     className="w-full accent-indigo-500"
                   />
-                  <span className="text-xs text-indigo-400 font-bold">{Math.round(zoom * 100)}%</span>
+                  <span className="text-[10px] sm:text-xs text-indigo-400 font-bold w-10 text-right">{Math.round(zoom * 100)}%</span>
                 </div>
-                <div className="flex gap-3">
-                  <Button variant="outline" className="flex-1 bg-white/05 border border-white/10 text-white/70 hover:text-white" onClick={() => setImageToCrop(null)}>
+                <div className="flex gap-2 sm:gap-3">
+                  <Button variant="outline" className="flex-1 bg-white/05 border border-white/10 text-white/70 hover:text-white text-xs sm:text-sm py-2 h-auto" onClick={() => setImageToCrop(null)}>
                     Kanselahin
                   </Button>
-                  <Button className="flex-1 btn-primary border-0 bg-indigo-600 hover:bg-indigo-700 text-white" onClick={async () => {
+                  <Button className="flex-1 btn-primary border-0 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm py-2 h-auto" onClick={async () => {
                     if (croppedAreaPixels) {
                       const getCroppedImg = async (imageSrc: string, pixelCrop: any) => {
                         const image = await new Promise<HTMLImageElement>((resolve, reject) => {
