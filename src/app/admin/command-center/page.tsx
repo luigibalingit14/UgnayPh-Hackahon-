@@ -4,7 +4,7 @@ import { useRef, useState, useEffect } from "react";
 import { 
   ShieldAlert, Activity, AlertTriangle, CloudRain, 
   MapPin, Radio, ShieldCheck, Car, Briefcase, Heart, Leaf, 
-  ChevronRight, RefreshCcw
+  ChevronRight, RefreshCcw, Satellite
 } from "lucide-react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
@@ -59,6 +59,8 @@ export default function CommandCenterPage() {
   const [mapMarkers, setMapMarkers] = useState<any[]>([]);
   const [isSyncing, setIsSyncing] = useState(true);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
+  const [nasaEvents, setNasaEvents] = useState<any[]>([]);
+  const [nasaLoading, setNasaLoading] = useState(true);
   
   // Real metrics simulation
   const [metrics, setMetrics] = useState({
@@ -124,6 +126,26 @@ export default function CommandCenterPage() {
 
     fetchLiveData();
     const inv = setInterval(fetchLiveData, 15000); // 15 seconds polling
+    return () => { mounted = false; clearInterval(inv); };
+  }, []);
+
+  // Fetch NASA EONET events
+  useEffect(() => {
+    let mounted = true;
+    const fetchNasa = async () => {
+      try {
+        setNasaLoading(true);
+        const res = await fetch('/api/eonet').then(r => r.json());
+        if (!res.success || !mounted) return;
+        setNasaEvents(res.data || []);
+      } catch (e) {
+        console.error('NASA EONET fetch failed', e);
+      } finally {
+        if (mounted) setNasaLoading(false);
+      }
+    };
+    fetchNasa();
+    const inv = setInterval(fetchNasa, 5 * 60 * 1000);
     return () => { mounted = false; clearInterval(inv); };
   }, []);
 
@@ -230,6 +252,17 @@ export default function CommandCenterPage() {
               <p className="text-xs text-white/50">Symptom Trackers Submitted</p>
             </div>
 
+            {/* NASA EONET Events */}
+            <div className="cc-card p-5 rounded-2xl bg-red-950/30 border border-red-500/20 backdrop-blur-md relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><Satellite className="h-24 w-24" /></div>
+              <p className="text-xs text-red-300 font-semibold uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <Satellite className="h-3 w-3" /> NASA EONET
+              </p>
+              <h3 className="text-3xl font-bold text-white mb-2">{nasaLoading ? '...' : nasaEvents.length}</h3>
+              <p className="text-xs text-white/50">Active Natural Events Worldwide</p>
+              <p className="text-[10px] text-red-400 mt-1">{nasaEvents.filter((e: any) => e.isInPhilippines).length} near Philippines</p>
+            </div>
+
             {/* Governance + Jobs + Agri mini row */}
             <div className="grid grid-cols-2 gap-4">
               <div className="cc-card p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md">
@@ -308,6 +341,33 @@ export default function CommandCenterPage() {
                       </Overlay>
                     );
                   })}
+
+                  {/* NASA EONET Diamond Markers */}
+                  {nasaEvents.map((ne: any, i: number) => {
+                    if (!ne.coordinates?.[0] && !ne.coordinates?.[1]) return null;
+                    return (
+                      <Overlay key={`nasa-${ne.id}`} anchor={[ne.coordinates[1], ne.coordinates[0]]} offset={[6, 6]}>
+                        <div className="cc-map-ping relative group/nasa cursor-pointer">
+                          {ne.isInPhilippines && (
+                            <span className="absolute inset-[-4px] rounded-full opacity-40 animate-ping" style={{ background: ne.color, animationDuration: '2.5s', animationDelay: `${i * 300}ms` }} />
+                          )}
+                          <div
+                            className="relative w-3 h-3 transform rotate-45 border transition-all z-10 hover:scale-150"
+                            style={{ background: ne.color, borderColor: ne.color, boxShadow: `0 0 10px ${ne.color}80` }}
+                          />
+                          {ne.isInPhilippines && <span className="absolute -top-2 -right-3 text-[8px]">🇵🇭</span>}
+                          <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-black/95 px-3 py-2 rounded-lg text-[10px] border border-white/20 text-white shadow-2xl opacity-0 scale-90 group-hover/nasa:opacity-100 group-hover/nasa:scale-100 transition-all z-30 pointer-events-none min-w-[180px]">
+                            <p className="font-bold text-[9px] uppercase tracking-wider mb-1 flex items-center gap-1" style={{ color: ne.color }}>
+                              <Satellite className="h-3 w-3" /> {ne.categoryTitle}
+                            </p>
+                            <p className="text-white/90 font-semibold">{ne.title}</p>
+                            {ne.magnitude && <p className="text-white/50 mt-0.5">{ne.magnitude} {ne.magnitudeUnit}</p>}
+                            <p className="text-[9px] text-white/30 mt-1">Source: NASA EONET</p>
+                          </div>
+                        </div>
+                      </Overlay>
+                    );
+                  })}
                 </Map>
                 </div>
               </div>
@@ -326,7 +386,22 @@ export default function CommandCenterPage() {
                 </h3>
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-                {liveEvents.length === 0 && !isSyncing ? (
+                {/* NASA EONET Events in feed */}
+                {nasaEvents.filter((ne: any) => ne.isInPhilippines || ne.severity === 'critical').slice(0, 5).map((ne: any) => (
+                  <div key={`nasa-feed-${ne.id}`} className="group relative pl-4 pb-4 border-l border-white/10 flex flex-col items-start">
+                    <div className="absolute -left-[5px] top-0.5 h-2.5 w-2.5 rounded-sm rotate-45" style={{ background: ne.color, boxShadow: `0 0 8px ${ne.color}` }} />
+                    <p className="text-[10px] text-white/40 mb-1 flex items-center gap-1">
+                      <Satellite className="h-3 w-3 text-red-400" />
+                      {ne.date ? formatDistanceToNow(new Date(ne.date), { addSuffix: true }) : 'Recent'} • NASA EONET
+                      {ne.isInPhilippines && <span className="ml-1">🇵🇭</span>}
+                    </p>
+                    <p className="text-sm text-white/90 leading-tight group-hover:text-white transition-colors mb-1">{ne.title}</p>
+                    <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full" style={{ background: `${ne.color}20`, color: ne.color }}>{ne.categoryTitle}</span>
+                  </div>
+                ))}
+
+                {/* Citizen reports */}
+                {liveEvents.length === 0 && !isSyncing && nasaEvents.length === 0 ? (
                   <p className="text-white/40 text-xs italic">No activity globally right now.</p>
                 ) : liveEvents.map((event) => {
                   const colors: any = { vibecheck:"text-indigo-400 bg-indigo-500", mobility:"text-amber-400 bg-amber-500", governance:"text-rose-400 bg-rose-500", health:"text-blue-400 bg-blue-500", agri:"text-lime-400 bg-lime-500", jobs:"text-emerald-400 bg-emerald-500" };

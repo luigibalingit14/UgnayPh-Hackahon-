@@ -7,7 +7,7 @@ import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   Car, Shield, ShieldCheck, Briefcase, Heart, Leaf,
-  ArrowRight, Zap, Globe, Users, Database, MapPin, ShieldAlert
+  ArrowRight, Zap, Globe, Users, Database, MapPin, ShieldAlert, Satellite
 } from "lucide-react";
 import { SyncButton } from "@/components/features/sync-button";
 import { ParticleNetwork } from "@/components/features/particle-network";
@@ -102,11 +102,26 @@ const modules = [
     border: "group-hover:border-lime-500/30",
     cta: "Explore",
   },
+  {
+    href: "/disasters",
+    label: "DisasterWatch",
+    tagline: "Know Before It Strikes",
+    description: "Monitor real-time natural disasters across the Philippines and the world — typhoons, earthquakes, volcanic eruptions — powered by NASA EONET satellite data.",
+    icon: Satellite,
+    sdg: "SDG 11 & 13",
+    color: "module-disasters",
+    accent: "#ef4444",
+    glow: "rgba(239,68,68,0.3)",
+    gradient: "from-red-500/20 to-orange-600/5",
+    border: "group-hover:border-red-500/30",
+    cta: "Monitor Now",
+    featured: true,
+  },
 ];
 
 const stats = [
-  { label: "SDG Challenges", value: "6", icon: Globe, color: "text-ph-blue" },
-  { label: "AI-Powered Tools", value: "6", icon: Zap, color: "text-ph-yellow" },
+  { label: "SDG Challenges", value: "7", icon: Globe, color: "text-ph-blue" },
+  { label: "AI-Powered Tools", value: "7", icon: Zap, color: "text-ph-yellow" },
   { label: "For All Filipinos", value: "∞", icon: Users, color: "text-ph-red" },
   { label: "Backed by Supabase", value: "✓", icon: Database, color: "text-blue-400" },
 ];
@@ -158,7 +173,7 @@ export default function HomePage() {
             {/* Badge */}
             <div className="hero-badge inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold bg-ph-blue/20 border border-ph-blue/40 text-blue-200 animate-pulse-glow">
               <span className="w-1.5 h-1.5 rounded-full bg-ph-yellow animate-ping" />
-              InterCICSkwela Hackathon 2026 · All 6 SDG Challenges
+              InterCICSkwela Hackathon 2026 · All 7 SDG Challenges
             </div>
 
             {/* Headline */}
@@ -211,7 +226,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4">
           <div className="modules-header text-center mb-14">
             <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-3">
-              Six Modules, One Mission
+              Seven Modules, One Mission
             </h2>
             <p className="text-white/45 max-w-xl mx-auto">
               Each module is a fully functional AI-powered tool addressing a critical Philippine challenge.
