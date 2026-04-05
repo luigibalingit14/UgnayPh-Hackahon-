@@ -4,7 +4,7 @@ import { useRef, useState, useEffect } from "react";
 import { 
   ShieldAlert, Activity, AlertTriangle, CloudRain, 
   MapPin, Radio, ShieldCheck, Car, Briefcase, Heart, Leaf, 
-  ChevronRight, RefreshCcw, Satellite
+  ChevronRight, RefreshCcw, Satellite, Mountain, Shield
 } from "lucide-react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
@@ -60,6 +60,8 @@ export default function CommandCenterPage() {
   const [isSyncing, setIsSyncing] = useState(true);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [nasaEvents, setNasaEvents] = useState<any[]>([]);
+  const [usgsEvents, setUsgsEvents] = useState<any[]>([]);
+  const [gdacsEvents, setGdacsEvents] = useState<any[]>([]);
   const [nasaLoading, setNasaLoading] = useState(true);
   
   // Real metrics simulation
@@ -129,23 +131,29 @@ export default function CommandCenterPage() {
     return () => { mounted = false; clearInterval(inv); };
   }, []);
 
-  // Fetch NASA EONET events
+  // Fetch all disaster feeds: EONET + USGS + GDACS
   useEffect(() => {
     let mounted = true;
-    const fetchNasa = async () => {
+    const fetchAllDisasters = async () => {
       try {
         setNasaLoading(true);
-        const res = await fetch('/api/eonet').then(r => r.json());
-        if (!res.success || !mounted) return;
-        setNasaEvents(res.data || []);
+        const [eonetRes, usgsRes, gdacsRes] = await Promise.allSettled([
+          fetch('/api/eonet').then(r => r.json()),
+          fetch('/api/usgs?days=7&minmag=3').then(r => r.json()),
+          fetch('/api/gdacs').then(r => r.json()),
+        ]);
+        if (!mounted) return;
+        if (eonetRes.status === 'fulfilled' && eonetRes.value.success) setNasaEvents(eonetRes.value.data || []);
+        if (usgsRes.status === 'fulfilled' && usgsRes.value.success) setUsgsEvents(usgsRes.value.data || []);
+        if (gdacsRes.status === 'fulfilled' && gdacsRes.value.success) setGdacsEvents(gdacsRes.value.data || []);
       } catch (e) {
-        console.error('NASA EONET fetch failed', e);
+        console.error('Disaster feeds fetch failed', e);
       } finally {
         if (mounted) setNasaLoading(false);
       }
     };
-    fetchNasa();
-    const inv = setInterval(fetchNasa, 5 * 60 * 1000);
+    fetchAllDisasters();
+    const inv = setInterval(fetchAllDisasters, 2 * 60 * 1000);
     return () => { mounted = false; clearInterval(inv); };
   }, []);
 
@@ -252,15 +260,19 @@ export default function CommandCenterPage() {
               <p className="text-xs text-white/50">Symptom Trackers Submitted</p>
             </div>
 
-            {/* NASA EONET Events */}
+            {/* Multi-Source Disaster Tracking */}
             <div className="cc-card p-5 rounded-2xl bg-red-950/30 border border-red-500/20 backdrop-blur-md relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><Satellite className="h-24 w-24" /></div>
               <p className="text-xs text-red-300 font-semibold uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                <Satellite className="h-3 w-3" /> NASA EONET
+                <Satellite className="h-3 w-3" /> Disaster Watch
               </p>
-              <h3 className="text-3xl font-bold text-white mb-2">{nasaLoading ? '...' : nasaEvents.length}</h3>
-              <p className="text-xs text-white/50">Active Natural Events Worldwide</p>
-              <p className="text-[10px] text-red-400 mt-1">{nasaEvents.filter((e: any) => e.isInPhilippines).length} near Philippines</p>
+              <h3 className="text-3xl font-bold text-white mb-1">{nasaLoading ? '...' : nasaEvents.length + usgsEvents.length + gdacsEvents.length}</h3>
+              <p className="text-xs text-white/50">Active Events (3 Sources)</p>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/20 font-semibold"><Mountain className="h-2.5 w-2.5 inline mr-0.5" />{usgsEvents.length} USGS</span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/20 font-semibold"><Shield className="h-2.5 w-2.5 inline mr-0.5" />{gdacsEvents.length} GDACS</span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/20 font-semibold"><Satellite className="h-2.5 w-2.5 inline mr-0.5" />{nasaEvents.length} NASA</span>
+              </div>
             </div>
 
             {/* Governance + Jobs + Agri mini row */}
@@ -368,6 +380,54 @@ export default function CommandCenterPage() {
                       </Overlay>
                     );
                   })}
+
+                  {/* USGS Earthquake Circle Markers */}
+                  {usgsEvents.slice(0, 20).map((eq: any, i: number) => {
+                    if (!eq.coordinates?.[0] && !eq.coordinates?.[1]) return null;
+                    return (
+                      <Overlay key={`usgs-${eq.id}`} anchor={[eq.coordinates[1], eq.coordinates[0]]} offset={[6, 6]}>
+                        <div className="cc-map-ping relative group/usgs cursor-pointer">
+                          <span className="absolute inset-[-3px] rounded-full opacity-40 animate-ping" style={{ background: eq.color, animationDuration: '2s', animationDelay: `${i * 200}ms` }} />
+                          <div
+                            className="relative w-3.5 h-3.5 rounded-full border-2 transition-all z-10 hover:scale-150"
+                            style={{ background: eq.color, borderColor: eq.color, boxShadow: `0 0 12px ${eq.color}80` }}
+                          />
+                          <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-black/95 px-3 py-2 rounded-lg text-[10px] border border-white/20 text-white shadow-2xl opacity-0 scale-90 group-hover/usgs:opacity-100 group-hover/usgs:scale-100 transition-all z-30 pointer-events-none min-w-[180px]">
+                            <p className="font-bold text-[9px] uppercase tracking-wider mb-1 flex items-center gap-1" style={{ color: eq.color }}>
+                              <Mountain className="h-3 w-3" /> USGS Earthquake
+                            </p>
+                            <p className="text-white/90 font-semibold">{eq.title}</p>
+                            {eq.depth && <p className="text-white/50 mt-0.5">Depth: {eq.depth} km</p>}
+                            <p className="text-[9px] text-orange-300 mt-1">Source: USGS</p>
+                          </div>
+                        </div>
+                      </Overlay>
+                    );
+                  })}
+
+                  {/* GDACS Alert Diamond Markers */}
+                  {gdacsEvents.slice(0, 15).map((gd: any, i: number) => {
+                    if (!gd.coordinates?.[0] && !gd.coordinates?.[1]) return null;
+                    return (
+                      <Overlay key={gd.id} anchor={[gd.coordinates[1], gd.coordinates[0]]} offset={[6, 6]}>
+                        <div className="cc-map-ping relative group/gdacs cursor-pointer">
+                          <span className="absolute inset-[-4px] rounded-sm rotate-45 opacity-40 animate-ping" style={{ background: gd.color, animationDuration: '2.5s', animationDelay: `${i * 250}ms` }} />
+                          <div
+                            className="relative w-3.5 h-3.5 transform rotate-45 border transition-all z-10 hover:scale-150"
+                            style={{ background: gd.color, borderColor: gd.color, boxShadow: `0 0 10px ${gd.color}80` }}
+                          />
+                          <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-black/95 px-3 py-2 rounded-lg text-[10px] border border-white/20 text-white shadow-2xl opacity-0 scale-90 group-hover/gdacs:opacity-100 group-hover/gdacs:scale-100 transition-all z-30 pointer-events-none min-w-[180px]">
+                            <p className="font-bold text-[9px] uppercase tracking-wider mb-1 flex items-center gap-1" style={{ color: gd.color }}>
+                              <Shield className="h-3 w-3" /> GDACS {gd.alertLevel}
+                            </p>
+                            <p className="text-white/90 font-semibold">{gd.title}</p>
+                            {gd.magnitudeText && <p className="text-white/50 mt-0.5">{gd.magnitudeText}</p>}
+                            <p className="text-[9px] text-rose-300 mt-1">Source: UN GDACS</p>
+                          </div>
+                        </div>
+                      </Overlay>
+                    );
+                  })}
                 </Map>
                 </div>
               </div>
@@ -387,16 +447,45 @@ export default function CommandCenterPage() {
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
                 {/* NASA EONET Events in feed */}
-                {nasaEvents.filter((ne: any) => ne.isInPhilippines || ne.severity === 'critical').slice(0, 5).map((ne: any) => (
+                {nasaEvents.filter((ne: any) => ne.isInPhilippines || ne.severity === 'critical').slice(0, 3).map((ne: any) => (
                   <div key={`nasa-feed-${ne.id}`} className="group relative pl-4 pb-4 border-l border-white/10 flex flex-col items-start">
                     <div className="absolute -left-[5px] top-0.5 h-2.5 w-2.5 rounded-sm rotate-45" style={{ background: ne.color, boxShadow: `0 0 8px ${ne.color}` }} />
                     <p className="text-[10px] text-white/40 mb-1 flex items-center gap-1">
-                      <Satellite className="h-3 w-3 text-red-400" />
+                      <Satellite className="h-3 w-3 text-blue-400" />
                       {ne.date ? formatDistanceToNow(new Date(ne.date), { addSuffix: true }) : 'Recent'} • NASA EONET
                       {ne.isInPhilippines && <span className="ml-1">🇵🇭</span>}
                     </p>
                     <p className="text-sm text-white/90 leading-tight group-hover:text-white transition-colors mb-1">{ne.title}</p>
                     <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full" style={{ background: `${ne.color}20`, color: ne.color }}>{ne.categoryTitle}</span>
+                  </div>
+                ))}
+
+                {/* USGS Earthquakes in feed */}
+                {usgsEvents.slice(0, 5).map((eq: any) => (
+                  <div key={`usgs-feed-${eq.id}`} className="group relative pl-4 pb-4 border-l border-white/10 flex flex-col items-start">
+                    <div className="absolute -left-[5px] top-0.5 h-2.5 w-2.5 rounded-full" style={{ background: eq.color, boxShadow: `0 0 8px ${eq.color}` }} />
+                    <p className="text-[10px] text-white/40 mb-1 flex items-center gap-1">
+                      <Mountain className="h-3 w-3 text-orange-400" />
+                      {eq.date ? formatDistanceToNow(new Date(eq.date), { addSuffix: true }) : 'Recent'} • USGS 🇵🇭
+                    </p>
+                    <p className="text-sm text-white/90 leading-tight group-hover:text-white transition-colors mb-1">{eq.title}</p>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/20">M {eq.magnitude}</span>
+                      {eq.tsunami && <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-yellow-500/15 text-yellow-400 border border-yellow-500/20">⚠️ Tsunami</span>}
+                    </div>
+                  </div>
+                ))}
+
+                {/* GDACS Disaster Alerts in feed */}
+                {gdacsEvents.slice(0, 3).map((gd: any) => (
+                  <div key={`gdacs-feed-${gd.id}`} className="group relative pl-4 pb-4 border-l border-white/10 flex flex-col items-start">
+                    <div className="absolute -left-[5px] top-0.5 h-2.5 w-2.5 rounded-sm rotate-45" style={{ background: gd.color, boxShadow: `0 0 8px ${gd.color}` }} />
+                    <p className="text-[10px] text-white/40 mb-1 flex items-center gap-1">
+                      <Shield className="h-3 w-3 text-rose-400" />
+                      {gd.date ? formatDistanceToNow(new Date(gd.date), { addSuffix: true }) : 'Recent'} • GDACS 🇵🇭
+                    </p>
+                    <p className="text-sm text-white/90 leading-tight group-hover:text-white transition-colors mb-1">{gd.title}</p>
+                    <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full border" style={{ background: `${gd.color}15`, color: gd.color, borderColor: `${gd.color}30` }}>{gd.alertLevel} Alert • {gd.eventTypeLabel}</span>
                   </div>
                 ))}
 
